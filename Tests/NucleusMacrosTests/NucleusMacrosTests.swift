@@ -1,46 +1,90 @@
 import SwiftSyntaxMacros
 import SwiftSyntaxMacrosTestSupport
 import XCTest
-
-// Macro implementations build for the host, so the corresponding module is not available when cross-compiling. Cross-compiled tests may still make use of the macro itself in end-to-end tests.
-#if canImport(NucleusMacrosMacros)
-import NucleusMacrosMacros
+import SwiftSyntax
+@testable
+import NucleusMacrosDefinitions
 
 let testMacros: [String: Macro.Type] = [
-    "stringify": StringifyMacro.self,
+    "Codable": Codable.self,
 ]
-#endif
 
 final class NucleusMacrosTests: XCTestCase {
     func testMacro() throws {
-        #if canImport(NucleusMacrosMacros)
         assertMacroExpansion(
-            """
-            #stringify(a + b)
+             """
+            @Codable
+            struct Model {
+            
+                let a: String
+            
+                let b = Int()
+            
+                let c: String?
+            
+                static let e: String
+            
+            }
             """,
             expandedSource: """
-            (a + b, "a + b")
+            struct Model {
+            
+                let a: String
+            
+                let b = Int()
+            
+                let c: String?
+            
+                static let e: String
+            
+            }
+            
+            extension Model: Codable {
+            
+                enum CodingKeys: CodingKey {
+                    case a
+                    case c
+                }
+            
+                func encode(to encoder: Encoder) throws {
+                    var container = encoder.container(keyedBy: CodingKeys.self)
+                    try container.encode(self.a, forKey: .a)
+                    try container.encodeIfPresent(self.c, forKey: .c)
+                }
+            
+                init(from decoder: Decoder) throws {
+                    let container = try decoder.container(keyedBy: CodingKeys.self)
+                    self.a = try container.decode(forKey: .a)
+                    self.c = try container.decodeIfPresent(forKey: .c)
+                }
+            }
             """,
             macros: testMacros
         )
-        #else
-        throw XCTSkip("macros are only supported when running tests for the host platform")
-        #endif
     }
-
-    func testMacroWithStringLiteral() throws {
-        #if canImport(NucleusMacrosMacros)
-        assertMacroExpansion(
-            #"""
-            #stringify("Hello, \(name)")
-            """#,
-            expandedSource: #"""
-            ("Hello, \(name)", #""Hello, \(name)""#)
-            """#,
-            macros: testMacros
-        )
-        #else
-        throw XCTSkip("macros are only supported when running tests for the host platform")
-        #endif
+    
+    func testExtensions() throws {
+        let syntax: DeclSyntax =
+    """
+    let a = Optional<Int>(3)
+    """
+        
+        //
+        //let a = Optional<Int>(3)
+        //let a = Model()
+        
+        dump(syntax)
+        try print(syntax.as(VariableDeclSyntax.self)?.bindings.first?.inferredType.isOptional)
     }
 }
+
+
+
+//- FunctionTypeSyntax
+//├─leftParen: leftParen
+//├─parameters: TupleTypeElementListSyntax
+//├─rightParen: rightParen
+//╰─returnClause: ReturnClauseSyntax
+//  ├─arrow: arrow
+//  ╰─type: IdentifierTypeSyntax
+//     ╰─name: identifier("Void")
