@@ -19,10 +19,9 @@ public enum memberwiseInitializable: MemberMacro {
                                  providingMembersOf declaration: some SwiftSyntax.DeclGroupSyntax,
                                  in context: some SwiftSyntaxMacros.MacroExpansionContext
     ) throws -> [SwiftSyntax.DeclSyntax] {
-        guard declaration.is(ClassDeclSyntax.self) ||
-                declaration.is(ClassDeclSyntax.self) else { throw shouldRemoveMacroError(for: declaration,
-                                                                                         macroName: "@memberwiseInitializable",
-                                                                                         message: "@memberwiseInitializable should only be applied to `class` or `struct`. Use the synthesized initializer instead") }
+        guard declaration.is(ClassDeclSyntax.self) else { throw shouldRemoveMacroError(for: declaration,
+                                                                                       macroName: "@memberwiseInitializable",
+                                                                                       message: "@memberwiseInitializable should only be applied to `class`. Use the synthesized initializer instead") }
         
         let members = memberwiseMap(for: declaration) { variable, variables, name -> CodeBlockItemSyntax in
             "self.\(raw: name) = \(raw: name)"
