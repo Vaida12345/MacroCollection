@@ -44,7 +44,7 @@ public enum Codable: ExtensionMacro {
             return parameter.firstName.text == "to" && parameter.type.as(IdentifierTypeSyntax.self)?.name.text == "Encoder"
         }) else { return nil } // `encode` already exists
         
-        let lines = try variablesMap(for: declaration) { variable, variables, name in
+        let lines = try memberwiseMap(for: declaration) { variable, variables, name in
             let syntax: CodeBlockItemSyntax
             
             if try variable.inferredType.isOptional {
@@ -79,7 +79,7 @@ public enum Codable: ExtensionMacro {
             return parameter.firstName.text == "from" && parameter.type.as(IdentifierTypeSyntax.self)?.name.text == "Decoder"
         }) else { return nil } // `encode` already exists
         
-        let lines = try variablesMap(for: declaration) { variable, variables, name in
+        let lines = try memberwiseMap(for: declaration) { variable, variables, name in
             let syntax: CodeBlockItemSyntax
             
             if try variable.inferredType.isOptional {
@@ -113,7 +113,7 @@ public enum Codable: ExtensionMacro {
             
         }) else { return nil } // `CodingKeys` already exists
         
-        let members = variablesMap(for: declaration) { variable, variables, name in
+        let members = memberwiseMap(for: declaration) { variable, variables, name in
             let caseDecl = EnumCaseDeclSyntax(elements: [EnumCaseElementSyntax(name: variable.pattern.as(IdentifierPatternSyntax.self)!.identifier)])
             return MemberBlockItemSyntax(decl: caseDecl)
         }
@@ -124,25 +124,6 @@ public enum Codable: ExtensionMacro {
                               memberBlock: MemberBlockSyntax(members: MemberBlockItemListSyntax(members)))
     }
     
-    private static func variablesMap<T>(for declaration: some SwiftSyntax.DeclGroupSyntax,
-                                        handler: (_ variable: PatternBindingListSyntax.Element, _ variables: VariableDeclSyntax, _ name: String) throws -> T
-    ) rethrows -> [T] {
-        let lines: [[T]] = try declaration.memberBlock.members.map { member in
-            guard let variables = member.decl.as(VariableDeclSyntax.self), variables.isStoredInstanceProperty else { return [] }
-            
-            // there may be multiple identifiers associated with the same member declaration, ie, `let a, b = 1`
-            return try variables.bindings.compactMap { variable -> T? in
-                guard let name = variable.pattern.as(IdentifierPatternSyntax.self)?.identifier.text else { return nil }
-                
-                // if constant property with default value, ignore.
-                if variables.bindingSpecifier.tokenKind == .keyword(.let) && variable.initializer != nil { return nil }
-                
-                return try handler(variable, variables, name)
-            }
-        }
-        return lines.flatMap({ $0 })
-    }
-    
     
     enum CodableError: CustomStringConvertible, Error {
         case appliedToInvalidDeclaration
@@ -150,7 +131,7 @@ public enum Codable: ExtensionMacro {
         var description: String {
             switch self {
             case .appliedToInvalidDeclaration:
-                "@Codable should only be applied to `struct` or `class` or `enum`"
+                "@Codable should only be applied to `struct` or `class`"
             }
         }
     }

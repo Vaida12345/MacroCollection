@@ -4,3 +4,6 @@
 
 @attached(extension, names: named(init(from:)), named(encode(to:)), named(CodingKeys), arbitrary, conformances: Codable)
 public macro Codable() = #externalMacro(module: "NucleusMacrosDefinitions", type: "Codable")
+
+@attached(member, names: named(init))
+public macro memberwiseInitializable() = #externalMacro(module: "NucleusMacrosDefinitions", type: "memberwiseInitializable")
