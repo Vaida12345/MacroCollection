@@ -33,7 +33,7 @@ public enum memberwiseInitializable: MemberMacro {
             } catch {
                 var replacementNote = decl
                 let lastBinding = decl.bindings.last!
-                let replacementPattern = IdentifierPatternSyntax(identifier: .identifier(lastBinding.pattern.as(IdentifierPatternSyntax.self)!.identifier.text))
+                let replacementPattern = lastBinding.pattern.with(\.trailingTrivia, [])
                 let replacementBinding = PatternBindingSyntax(pattern: replacementPattern,
                                                               typeAnnotation: TypeAnnotationSyntax(colon: .colonToken(trailingTrivia: .space),
                                                                                                    type: MissingTypeSyntax(placeholder: .identifier("<#type#>"),

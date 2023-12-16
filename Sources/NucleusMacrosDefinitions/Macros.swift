@@ -6,7 +6,8 @@ import SwiftSyntaxMacros
 @main
 struct NucleusMacrosPlugin: CompilerPlugin {
     let providingMacros: [Macro.Type] = [
-        Codable.self,
-        memberwiseInitializable.self
+        codable.self,
+        memberwiseInitializable.self,
+        transient.self,
     ]
 }

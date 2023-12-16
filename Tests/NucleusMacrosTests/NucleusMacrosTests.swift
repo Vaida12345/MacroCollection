@@ -6,37 +6,31 @@ import SwiftSyntax
 import NucleusMacrosDefinitions
 
 let testMacros: [String: Macro.Type] = [
-    "Codable": Codable.self,
-    "memberwiseInitializable": memberwiseInitializable.self
+    "codable": codable.self,
+    "memberwiseInitializable": memberwiseInitializable.self,
+    "transient": transient.self
 ]
 
 final class NucleusMacrosTests: XCTestCase {
     func testMacro() throws {
         assertMacroExpansion(
              """
-            @memberwiseInitializable
+            @codable
             class Model {
             
                 let a: String
-            
-                var b = Int()
-            
-                let c: String?
-            
-                static let e: String
+                
+                @transient
+                var c: String?
             
             }
             """,
             expandedSource: """
-            struct Model {
+            class Model {
             
                 let a: String
-            
-                let b = Int()
-            
-                let c: String?
-            
-                static let e: String
+                
+                var c: String?
             
             }
             
@@ -44,19 +38,16 @@ final class NucleusMacrosTests: XCTestCase {
             
                 enum CodingKeys: CodingKey {
                     case a
-                    case c
                 }
             
                 func encode(to encoder: Encoder) throws {
                     var container = encoder.container(keyedBy: CodingKeys.self)
                     try container.encode(self.a, forKey: .a)
-                    try container.encodeIfPresent(self.c, forKey: .c)
                 }
             
                 init(from decoder: Decoder) throws {
                     let container = try decoder.container(keyedBy: CodingKeys.self)
                     self.a = try container.decode(forKey: .a)
-                    self.c = try container.decodeIfPresent(forKey: .c)
                 }
             }
             """,
@@ -64,19 +55,19 @@ final class NucleusMacrosTests: XCTestCase {
         )
     }
     
-    func testExtensions() throws {
-        let syntax: DeclSyntax =
-    """
-    let a = Optional<Int>(3)
-    """
-        
-        //
-        //let a = Optional<Int>(3)
-        //let a = Model()
-        
-        dump(syntax)
-        try print(syntax.as(VariableDeclSyntax.self)?.bindings.first?.inferredType.isOptional)
-    }
+//    func testExtensions() throws {
+//        let syntax: DeclSyntax =
+//    """
+//    let a = Optional<Int>(3)
+//    """
+//        
+//        //
+//        //let a = Optional<Int>(3)
+//        //let a = Model()
+//        
+//        dump(syntax)
+//        try print(syntax.as(VariableDeclSyntax.self)?.bindings.first?.inferredType.isOptional)
+//    }
 }
 
 

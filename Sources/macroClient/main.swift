@@ -1,13 +1,14 @@
 
 import NucleusMacros
 
-@memberwiseInitializable
-public class Model {
+@codable
+public struct Model {
     
     let a: String
     
     let b = Int()
     
-    var c = Int()
+    @transient
+    var c: Int = Int()
     
 }

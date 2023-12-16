@@ -52,11 +52,6 @@
                BlueprintName = "NucleusMacrosTests"
                ReferencedContainer = "container:">
             </BuildableReference>
-            <SkippedTests>
-               <Test
-                  Identifier = "NucleusMacrosTests/testMacro()">
-               </Test>
-            </SkippedTests>
          </TestableReference>
       </Testables>
    </TestAction>

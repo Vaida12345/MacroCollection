@@ -1,5 +1,5 @@
 //
-//  Codable.swift
+//  codable.swift
 //  NucleusMacros
 //
 //  Created by Vaida on 2023/12/15.
@@ -11,7 +11,7 @@ import SwiftSyntaxMacros
 import SwiftSyntaxBuilder
 
 
-public enum Codable: ExtensionMacro {
+public enum codable: ExtensionMacro {
     
     public static func expansion(of node: SwiftSyntax.AttributeSyntax,
                                  attachedTo declaration: some SwiftSyntax.DeclGroupSyntax,
@@ -44,7 +44,7 @@ public enum Codable: ExtensionMacro {
             return parameter.firstName.text == "to" && parameter.type.as(IdentifierTypeSyntax.self)?.name.text == "Encoder"
         }) else { return nil } // `encode` already exists
         
-        let lines = try memberwiseMap(for: declaration) { variable, variables, name in
+        let lines = try _memberwiseMap(for: declaration) { variable, variables, name in
             let syntax: CodeBlockItemSyntax
             
             if try variable.inferredType.isOptional {
@@ -79,7 +79,7 @@ public enum Codable: ExtensionMacro {
             return parameter.firstName.text == "from" && parameter.type.as(IdentifierTypeSyntax.self)?.name.text == "Decoder"
         }) else { return nil } // `encode` already exists
         
-        let lines = try memberwiseMap(for: declaration) { variable, variables, name in
+        let lines = try _memberwiseMap(for: declaration) { variable, variables, name in
             let syntax: CodeBlockItemSyntax
             
             if try variable.inferredType.isOptional {
@@ -113,7 +113,7 @@ public enum Codable: ExtensionMacro {
             
         }) else { return nil } // `CodingKeys` already exists
         
-        let members = memberwiseMap(for: declaration) { variable, variables, name in
+        let members = _memberwiseMap(for: declaration) { variable, variables, name in
             let caseDecl = EnumCaseDeclSyntax(elements: [EnumCaseElementSyntax(name: variable.pattern.as(IdentifierPatternSyntax.self)!.identifier)])
             return MemberBlockItemSyntax(decl: caseDecl)
         }
@@ -122,6 +122,20 @@ public enum Codable: ExtensionMacro {
                               name: "CodingKeys",
                               inheritanceClause: InheritanceClauseSyntax(inheritedTypes: [InheritedTypeSyntax(type: .identifier("CodingKey"))]),
                               memberBlock: MemberBlockSyntax(members: MemberBlockItemListSyntax(members)))
+    }
+    
+    fileprivate static func _memberwiseMap<T>(for declaration: some SwiftSyntax.DeclGroupSyntax,
+                                          ignoreComputedProperties: Bool = true,
+                                          ignoreConstantProperties: Bool = true,
+                                          handler: (_ variable: PatternBindingListSyntax.Element, _ decl: VariableDeclSyntax, _ name: String) throws -> T?
+    ) rethrows -> [T] {
+        try memberwiseMap(for: declaration,
+                      ignoreComputedProperties: ignoreComputedProperties,
+                      ignoreConstantProperties: ignoreConstantProperties) { variable, decl, name in
+            guard !decl.attributes.contains(where: { $0.as(AttributeSyntax.self)?.attributeName.as(IdentifierTypeSyntax.self)?.name.text == "transient" }) else { return nil }
+            
+            return try handler(variable, decl, name)
+        }
     }
     
     
