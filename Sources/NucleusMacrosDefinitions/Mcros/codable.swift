@@ -44,10 +44,11 @@ public enum codable: ExtensionMacro {
             return parameter.firstName.text == "to" && parameter.type.as(IdentifierTypeSyntax.self)?.name.text == "Encoder"
         }) else { return nil } // `encode` already exists
         
-        let lines = try _memberwiseMap(for: declaration) { variable, variables, name in
+        let lines = try _memberwiseMap(for: declaration) { variable, decl, name in
             let syntax: CodeBlockItemSyntax
             
-            if try variable.inferredType.isOptional {
+            let type = try getType(for: variable, decl: decl, name: name, of: node)
+            if type.isOptional {
                 syntax = "try container.encodeIfPresent(self.\(raw: name), forKey: .\(raw: name))"
             } else {
                 syntax = "try container.encode(self.\(raw: name), forKey: .\(raw: name))"
@@ -56,7 +57,7 @@ public enum codable: ExtensionMacro {
             return syntax
         }
         
-        return FunctionDeclSyntax(modifiers: declaration.modifiers,
+        return FunctionDeclSyntax(modifiers: declaration.modifiers.filter({ $0.name == .keyword(.public) || $0.name == .keyword(.open) }),
                                   name: "encode",
                                   signature: .init(parameterClause: .init(parameters: .init([.init(firstName: "to", secondName: "encoder", type: .identifier("Encoder"))])),
                                                    effectSpecifiers: .init(throwsSpecifier: .keyword(.throws)))) {
@@ -79,10 +80,11 @@ public enum codable: ExtensionMacro {
             return parameter.firstName.text == "from" && parameter.type.as(IdentifierTypeSyntax.self)?.name.text == "Decoder"
         }) else { return nil } // `encode` already exists
         
-        let lines = try _memberwiseMap(for: declaration) { variable, variables, name in
+        let lines = try _memberwiseMap(for: declaration) { variable, decl, name in
             let syntax: CodeBlockItemSyntax
             
-            if try variable.inferredType.isOptional {
+            let type = try getType(for: variable, decl: decl, name: name, of: node)
+            if type.isOptional {
                 syntax = "self.\(raw: name) = try container.decodeIfPresent(forKey: .\(raw: name))"
             } else {
                 syntax = "self.\(raw: name) = try container.decode(forKey: .\(raw: name))"
@@ -91,7 +93,7 @@ public enum codable: ExtensionMacro {
             return syntax
         }
         
-        return InitializerDeclSyntax(modifiers: declaration.modifiers,
+        return InitializerDeclSyntax(modifiers: declaration.modifiers.filter({ $0.name == .keyword(.public) || $0.name == .keyword(.open) }),
                                      signature: .init(parameterClause: .init(parameters: .init([.init(firstName: "from", secondName: "decoder", type: .identifier("Decoder"))])),
                                                       effectSpecifiers: .init(throwsSpecifier: .keyword(.throws)))) {
             "let container = try decoder.container(keyedBy: CodingKeys.self)"
@@ -118,7 +120,7 @@ public enum codable: ExtensionMacro {
             return MemberBlockItemSyntax(decl: caseDecl)
         }
         
-        return EnumDeclSyntax(modifiers: declaration.modifiers,
+        return EnumDeclSyntax(modifiers: declaration.modifiers.filter({ $0.name == .keyword(.public) || $0.name == .keyword(.open) }),
                               name: "CodingKeys",
                               inheritanceClause: InheritanceClauseSyntax(inheritedTypes: [InheritedTypeSyntax(type: .identifier("CodingKey"))]),
                               memberBlock: MemberBlockSyntax(members: MemberBlockItemListSyntax(members)))

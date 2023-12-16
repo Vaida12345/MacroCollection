@@ -45,8 +45,6 @@ extension ExprSyntax {
                    let asSyntax = sequence.elements[sequence.elements.index(after: sequence.elements.startIndex)].as(UnresolvedAsExprSyntax.self),
                    let base = sequence.elements[sequence.elements.index(before: sequence.elements.endIndex)].as(TypeExprSyntax.self)?.type {
                     return asSyntax.questionOrExclamationMark?.tokenKind == .postfixQuestionMark ? OptionalTypeSyntax(wrappedType: base) : base
-                } else {
-                    
                 }
                 
                 // The `let a = [1, 2, nil]` case

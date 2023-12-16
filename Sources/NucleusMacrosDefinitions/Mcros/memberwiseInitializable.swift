@@ -27,34 +27,7 @@ public enum memberwiseInitializable: MemberMacro {
         
         var parameters = try memberwiseMap(for: declaration) { variable, decl, name -> FunctionParameterSyntax? in
             let firstName = variable.pattern.as(IdentifierPatternSyntax.self)!.identifier
-            let type: any TypeSyntaxProtocol
-            do {
-                type = try variable.inferredType
-            } catch {
-                var replacementNote = decl
-                let lastBinding = decl.bindings.last!
-                let replacementPattern = lastBinding.pattern.with(\.trailingTrivia, [])
-                let replacementBinding = PatternBindingSyntax(pattern: replacementPattern,
-                                                              typeAnnotation: TypeAnnotationSyntax(colon: .colonToken(trailingTrivia: .space),
-                                                                                                   type: MissingTypeSyntax(placeholder: .identifier("<#type#>"),
-                                                                                                                           trailingTrivia: .space)),
-                                                              initializer: lastBinding.initializer
-                )
-                
-                replacementNote.bindings[replacementNote.bindings.index(before: replacementNote.bindings.endIndex)] = replacementBinding
-                
-                throw DiagnosticsError(diagnostics: [
-                    Diagnostic(node: declaration,
-                               message: .diagnostic(message: "Type of `\(name)` cannot be inferred, please declare explicitly",
-                                                    diagnosticID: "memberwiseInitializable.cannotInferType.\(name)",
-                                                    severity: .error),
-                               highlights: [decl.cast(Syntax.self)],
-                               notes: [Note(node: decl.cast(Syntax.self), message: .note(message: "Please declare type explicitly", diagnosticID: ""))],
-                               fixIt: .replace(message: .fixing(message: "Declare Type for `\(name)`", diagnosticID: "memberwiseInitializable.cannotInferType.\(name)"),
-                                               oldNode: decl,
-                                               newNode: replacementNote))
-                ])
-            }
+            let type = try getType(for: variable, decl: decl, name: name, of: node)
             
             return FunctionParameterSyntax(firstName: firstName, type: type, defaultValue: variable.initializer)
         }

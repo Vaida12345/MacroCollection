@@ -8,6 +8,7 @@
 import Foundation
 import SwiftSyntax
 import SwiftSyntaxMacros
+import SwiftDiagnostics
 
 
 extension Macro {
@@ -41,6 +42,36 @@ extension Macro {
             }
         }
         return lines.flatMap({ $0 })
+    }
+    
+    internal static func getType(for variable: PatternBindingListSyntax.Element, decl: VariableDeclSyntax, name: String, of declaration: some SyntaxProtocol) throws -> any TypeSyntaxProtocol {
+        do {
+            return try variable.inferredType
+        } catch {
+            var replacementNote = decl
+            let lastBinding = decl.bindings.last!
+            let replacementPattern = lastBinding.pattern.with(\.trailingTrivia, [])
+            let replacementBinding = PatternBindingSyntax(pattern: replacementPattern,
+                                                          typeAnnotation: TypeAnnotationSyntax(colon: .colonToken(trailingTrivia: .space),
+                                                                                               type: MissingTypeSyntax(placeholder: .identifier("<#type#>"),
+                                                                                                                       trailingTrivia: .space)),
+                                                          initializer: lastBinding.initializer
+            )
+            
+            replacementNote.bindings[replacementNote.bindings.index(before: replacementNote.bindings.endIndex)] = replacementBinding
+            
+            throw DiagnosticsError(diagnostics: [
+                Diagnostic(node: declaration,
+                           message: .diagnostic(message: "Type of `\(name)` cannot be inferred, please declare explicitly",
+                                                diagnosticID: "memberwiseInitializable.cannotInferType.\(name)",
+                                                severity: .error),
+                           highlights: [decl.cast(Syntax.self)],
+                           notes: [Note(node: decl.cast(Syntax.self), message: .note(message: "Please declare type explicitly", diagnosticID: ""))],
+                           fixIt: .replace(message: .fixing(message: "Declare Type for `\(name)`", diagnosticID: "memberwiseInitializable.cannotInferType.\(name)"),
+                                           oldNode: decl,
+                                           newNode: replacementNote))
+            ])
+        }
     }
     
 }
