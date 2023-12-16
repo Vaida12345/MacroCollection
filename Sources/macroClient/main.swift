@@ -1,13 +1,13 @@
 
 import NucleusMacros
 
-
-public struct Model {
+@memberwiseInitializable
+public class Model {
     
     let a: String
     
     let b = Int()
     
-    var c = ""
+    var c = Int()
     
 }

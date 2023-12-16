@@ -9,6 +9,8 @@ import Foundation
 import SwiftSyntax
 import SwiftSyntaxMacros
 import SwiftSyntaxBuilder
+import SwiftDiagnostics
+import SwiftCompilerPluginMessageHandling
 
 
 public enum memberwiseInitializable: MemberMacro {
@@ -23,9 +25,36 @@ public enum memberwiseInitializable: MemberMacro {
             "self.\(raw: name) = \(raw: name)"
         }
         
-        var parameters = try memberwiseMap(for: declaration) { variable, variables, name -> FunctionParameterSyntax in
+        var parameters = try memberwiseMap(for: declaration) { variable, decl, name -> FunctionParameterSyntax? in
             let firstName = variable.pattern.as(IdentifierPatternSyntax.self)!.identifier
-            guard let type = try? variable.inferredType else { throw memberwiseInitializableError.cannotInferType(name) }
+            let type: any TypeSyntaxProtocol
+            do {
+                type = try variable.inferredType
+            } catch {
+                var replacementNote = decl
+                let lastBinding = decl.bindings.last!
+                let replacementPattern = IdentifierPatternSyntax(identifier: .identifier(lastBinding.pattern.as(IdentifierPatternSyntax.self)!.identifier.text))
+                let replacementBinding = PatternBindingSyntax(pattern: replacementPattern,
+                                                              typeAnnotation: TypeAnnotationSyntax(colon: .colonToken(trailingTrivia: .space),
+                                                                                                   type: MissingTypeSyntax(placeholder: .identifier("<#type#>"),
+                                                                                                                           trailingTrivia: .space)),
+                                                              initializer: lastBinding.initializer
+                )
+                
+                replacementNote.bindings[replacementNote.bindings.index(before: replacementNote.bindings.endIndex)] = replacementBinding
+                
+                throw DiagnosticsError(diagnostics: [
+                    Diagnostic(node: declaration,
+                               message: .diagnostic(message: "Type of `\(name)` cannot be inferred, please declare explicitly",
+                                                    diagnosticID: "memberwiseInitializable.cannotInferType.\(name)",
+                                                    severity: .error),
+                               highlights: [decl.cast(Syntax.self)],
+                               notes: [Note(node: decl.cast(Syntax.self), message: .note(message: "Please declare type explicitly", diagnosticID: ""))],
+                               fixIt: .replace(message: .fixing(message: "Declare Type for `\(name)`", diagnosticID: "memberwiseInitializable.cannotInferType.\(name)"),
+                                               oldNode: decl,
+                                               newNode: replacementNote))
+                ])
+            }
             
             return FunctionParameterSyntax(firstName: firstName, type: type, defaultValue: variable.initializer)
         }
@@ -44,14 +73,11 @@ public enum memberwiseInitializable: MemberMacro {
     
     enum memberwiseInitializableError: CustomStringConvertible, Error {
         case appliedToInvalidDeclaration
-        case cannotInferType(String)
         
         var description: String {
             switch self {
             case .appliedToInvalidDeclaration:
                 "@memberwiseInitializable should only be applied to `class`. Use the synthesized initializer instead"
-            case let .cannotInferType(string):
-                "The type of `\(string)` cannot be inferred, please declare explicitly"
             }
         }
     }

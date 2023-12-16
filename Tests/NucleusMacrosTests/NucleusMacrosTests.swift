@@ -7,18 +7,19 @@ import NucleusMacrosDefinitions
 
 let testMacros: [String: Macro.Type] = [
     "Codable": Codable.self,
+    "memberwiseInitializable": memberwiseInitializable.self
 ]
 
 final class NucleusMacrosTests: XCTestCase {
     func testMacro() throws {
         assertMacroExpansion(
              """
-            @Codable
-            struct Model {
+            @memberwiseInitializable
+            class Model {
             
                 let a: String
             
-                let b = Int()
+                var b = Int()
             
                 let c: String?
             

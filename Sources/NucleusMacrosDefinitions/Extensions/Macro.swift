@@ -25,7 +25,7 @@ extension Macro {
     internal static func memberwiseMap<T>(for declaration: some SwiftSyntax.DeclGroupSyntax,
                                           ignoreComputedProperties: Bool = true,
                                           ignoreConstantProperties: Bool = true,
-                                          handler: (_ variable: PatternBindingListSyntax.Element, _ decl: VariableDeclSyntax, _ name: String) throws -> T
+                                          handler: (_ variable: PatternBindingListSyntax.Element, _ decl: VariableDeclSyntax, _ name: String) throws -> T?
     ) rethrows -> [T] {
         let lines: [[T]] = try declaration.memberBlock.members.map { member in
             guard let variables = member.decl.as(VariableDeclSyntax.self), Bool.implies(ignoreComputedProperties, variables.isStoredInstanceProperty) else { return [] }

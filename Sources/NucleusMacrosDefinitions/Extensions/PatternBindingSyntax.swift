@@ -12,7 +12,7 @@ import SwiftSyntax
 extension PatternBindingSyntax {
     
     /// Returns the type associated with the variable.
-    internal var inferredType: (any TypeSyntaxProtocol) {
+    internal var inferredType: any TypeSyntaxProtocol {
         get throws {
             // The base case, where the type is explicitly declared.
             if let type = self.typeAnnotation?.type {
