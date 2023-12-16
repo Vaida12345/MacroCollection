@@ -11,7 +11,25 @@ import SwiftSyntaxMacros
 import SwiftSyntaxBuilder
 
 
-public enum codable: ExtensionMacro {
+public enum codable: ExtensionMacro, MemberMacro {
+    
+    
+    public static func expansion(of node: SwiftSyntax.AttributeSyntax, 
+                                 providingMembersOf declaration: some SwiftSyntax.DeclGroupSyntax,
+                                 in context: some SwiftSyntaxMacros.MacroExpansionContext
+    ) throws -> [SwiftSyntax.DeclSyntax] {
+        guard declaration.is(StructDeclSyntax.self) || 
+                declaration.is(ClassDeclSyntax.self) else { throw shouldRemoveMacroError(for: declaration,
+                                                                                         macroName: "@codable",
+                                                                                         message: "@codable should only be applied to `struct` or `class`") }
+        
+        return if let line = try generateDecode(of: node, providingMembersOf: declaration, in: context) {
+            [line.cast(DeclSyntax.self)]
+        } else {
+            []
+        }
+    }
+    
     
     public static func expansion(of node: SwiftSyntax.AttributeSyntax,
                                  attachedTo declaration: some SwiftSyntax.DeclGroupSyntax,
@@ -19,16 +37,20 @@ public enum codable: ExtensionMacro {
                                  conformingTo protocols: [SwiftSyntax.TypeSyntax],
                                  in context: some SwiftSyntaxMacros.MacroExpansionContext
     ) throws -> [SwiftSyntax.ExtensionDeclSyntax] {
-        guard declaration.is(StructDeclSyntax.self) || declaration.is(ClassDeclSyntax.self) else { throw CodableError.appliedToInvalidDeclaration }
+        guard declaration.is(StructDeclSyntax.self) ||
+                declaration.is(ClassDeclSyntax.self) else { throw shouldRemoveMacroError(for: declaration,
+                                                                                         macroName: "@codable",
+                                                                                         message: "@codable should only be applied to `struct` or `class`") }
+        
+        var shouldDeclareInheritance = true
         if let inheritedTypes = declaration.inheritanceClause?.inheritedTypes,
            inheritedTypes.contains(where: { $0.type.as(IdentifierTypeSyntax.self)?.name.text == "Codable" }) {
-            return []
+            shouldDeclareInheritance = false
         }
         
-        return try [ExtensionDeclSyntax("extension \(type): Codable") {
+        return try [ExtensionDeclSyntax("extension \(type)\(raw: shouldDeclareInheritance ? ": Codable" : "")") {
             if let line = try generateCodingKeys(of: node, providingMembersOf: declaration, in: context) { .init(leadingTrivia: .newlines(2), decl: line, trailingTrivia: .newlines(2)) }
-            if let line = try generateEncode(of: node, providingMembersOf: declaration, in: context) { .init(decl: line, trailingTrivia: .newlines(2)) }
-            if let line = try generateDecode(of: node, providingMembersOf: declaration, in: context) { .init(decl: line) }
+            if let line = try generateEncode(of: node, providingMembersOf: declaration, in: context) { .init(decl: line) }
         }]
     }
     
@@ -78,7 +100,7 @@ public enum codable: ExtensionMacro {
             let parameters = member.signature.parameterClause.parameters
             guard parameters.count == 1, let parameter = parameters.first else { return false }
             return parameter.firstName.text == "from" && parameter.type.as(IdentifierTypeSyntax.self)?.name.text == "Decoder"
-        }) else { return nil } // `encode` already exists
+        }) else { return nil } // `decode` already exists
         
         let lines = try _memberwiseMap(for: declaration) { variable, decl, name in
             let syntax: CodeBlockItemSyntax
@@ -137,18 +159,6 @@ public enum codable: ExtensionMacro {
             guard !decl.attributes.contains(where: { $0.as(AttributeSyntax.self)?.attributeName.as(IdentifierTypeSyntax.self)?.name.text == "transient" }) else { return nil }
             
             return try handler(variable, decl, name)
-        }
-    }
-    
-    
-    enum CodableError: CustomStringConvertible, Error {
-        case appliedToInvalidDeclaration
-        
-        var description: String {
-            switch self {
-            case .appliedToInvalidDeclaration:
-                "@Codable should only be applied to `struct` or `class`"
-            }
         }
     }
 }

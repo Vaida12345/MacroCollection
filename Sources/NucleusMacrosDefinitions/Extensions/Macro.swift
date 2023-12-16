@@ -44,6 +44,13 @@ extension Macro {
         return lines.flatMap({ $0 })
     }
     
+    /// Returns the type of the `variable`.
+    ///
+    /// - Parameters:
+    ///   - variable: The first field of `memberwiseMap`
+    ///   - decl: The second field of `memberwiseMap`
+    ///   - name: The third field of `memberwiseMap`
+    ///   - declaration: The main declaration
     internal static func getType(for variable: PatternBindingListSyntax.Element, decl: VariableDeclSyntax, name: String, of declaration: some SyntaxProtocol) throws -> any TypeSyntaxProtocol {
         do {
             return try variable.inferredType
@@ -74,17 +81,39 @@ extension Macro {
             throw DiagnosticsError(diagnostics: [
                 Diagnostic(node: declaration,
                            message: .diagnostic(message: "Type of `\(name)` cannot be inferred, please declare explicitly",
-                                                diagnosticID: "memberwiseInitializable.cannotInferType.\(name)",
-                                                severity: .error),
+                                                diagnosticID: "\(Self.self).cannotInferType.\(name)"),
                            highlights: [decl.cast(Syntax.self)],
                            notes: [Note(node: decl.cast(Syntax.self), message: .note(message: "Please declare type explicitly", diagnosticID: ""))],
-                           fixIt: .replace(message: .fixing(message: "Declare Type for `\(name)`", diagnosticID: "memberwiseInitializable.cannotInferType.\(name)"),
+                           fixIt: .replace(message: .fixing(message: "Declare Type for `\(name)`", diagnosticID: "\(Self.self).cannotInferType.\(name)"),
                                            oldNode: decl,
                                            newNode: replacementNote))
             ])
         }
     }
     
+    /// Returns the error indicating that the macro should be removed.
+    ///
+    /// - Parameters:
+    ///   - declaration: The main declaration
+    ///   - macroName: The name of the macro, with any attributes
+    ///   - message: The message indicating why it should be removed.
+    internal static func shouldRemoveMacroError(for declaration: some SwiftSyntax.DeclGroupSyntax,
+                                                macroName: String,
+                                                message: String
+    ) -> DiagnosticsError {
+        var replacement = declaration.attributes
+        replacement.remove(at: declaration.attributes.firstIndex(where: { $0.as(AttributeSyntax.self)!.attributeName.as(IdentifierTypeSyntax.self)!.name.text == macroName.dropFirst() })!)
+        
+        return DiagnosticsError(diagnostics: [
+            Diagnostic(node: declaration.attributes,
+                       message: .diagnostic(message: message,
+                                            diagnosticID: "\(Self.self).shouldRemoveMacroError.\(macroName)"
+                                           ),
+                       fixIt: .replace(message: .fixing(message: "Remove `\(macroName)`", diagnosticID: "\(Self.self).shouldRemoveMacroError.\(macroName)"),
+                                       oldNode: declaration.attributes,
+                                       newNode: replacement))
+        ])
+    }
 }
 
 

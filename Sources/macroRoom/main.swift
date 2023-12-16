@@ -3,7 +3,7 @@ import SwiftSyntax
 
 let syntax: DeclSyntax =
     """
-    let a = Int()
+    self.init(a: a, b: b, c: c)
     """
 
 dump(syntax)

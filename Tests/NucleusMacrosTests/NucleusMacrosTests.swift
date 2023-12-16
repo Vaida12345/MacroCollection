@@ -15,8 +15,8 @@ final class NucleusMacrosTests: XCTestCase {
     func testMacro() throws {
         assertMacroExpansion(
              """
-            @codable
-            class Model {
+            @memberwiseInitializable
+            struct Model {
             
                 let a: String
                 
