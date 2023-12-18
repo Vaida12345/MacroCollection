@@ -157,7 +157,7 @@ public enum accessingAssociatedValues: ExtensionMacro {
     ///
     /// If there isn't any value associated with `property`, this function would always return `nil`.
     ///
-    /// - SeeAlso: If you are not interested in the value associated with `property`, see ``as(_:)``.
+    /// - SeeAlso: If you are not interested in the value associated with `property`, see ``is(_:)``.
     """
     
     static let isDocumentation: StaticString = """

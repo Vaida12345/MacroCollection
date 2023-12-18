@@ -27,6 +27,27 @@ import Foundation
 /// ```
 ///
 /// Please note that any non-assignable values are ignored.
+///
+/// ## Transient values
+/// To ignore value explicitly, use the ``transient()`` macro.
+/// ```swift
+/// @codable
+/// class Cat {
+///     let name: String
+///
+///     @transient
+///     let age: Int
+/// }
+/// ```
+///
+/// In the generated `CodingKeys`, the `transient()` annotated property `age` is ignored.
+/// ```swift
+/// enum CodingKeys: CodingKey {
+///     case name
+/// }
+/// ```
+///
+/// The other generated codes are updated according.
 @attached(extension, names: named(encode(to:)), named(CodingKeys), conformances: Codable)
 @attached(member, names: named(init(from:)))
 public macro codable() = #externalMacro(module: "NucleusMacrosDefinitions", type: "codable")
@@ -96,7 +117,7 @@ public macro url(_ string: StaticString) -> URL = #externalMacro(module: "Nucleu
 /// ```
 @available(macOS 11.0, iOS 15, watchOS 7, *)
 @freestanding(expression)
-public macro symbol(systemName: StaticString) -> String = #externalMacro(module: "NucleusMacrosDefinitions", type: "symbol")
+public macro symbol(_ name: StaticString) -> String = #externalMacro(module: "NucleusMacrosDefinitions", type: "symbol")
 
 /// Generates methods for retrieving associated values and determining cases.
 ///
