@@ -20,7 +20,7 @@ final class NucleusMacrosTests: XCTestCase {
         assertMacroExpansion(
              """
             @accessingAssociatedValues
-            enum Model: Codable {
+            public enum Model: Codable {
             
             case a(model: String)
             
@@ -29,7 +29,7 @@ final class NucleusMacrosTests: XCTestCase {
             }
             """,
             expandedSource: """
-            enum Model: Codable {
+            public enum Model: Codable {
             
             case a(model: String)
             
@@ -37,7 +37,7 @@ final class NucleusMacrosTests: XCTestCase {
             
             }
             
-            extension Model {
+            public extension Model {
             /// Returns the value associated with `property`, if the case matches.
             ///
             /// This method can be considered as an alternative to `if case let`.

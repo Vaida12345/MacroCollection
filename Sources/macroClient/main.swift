@@ -5,7 +5,7 @@ import AVFoundation
 
 
 @accessingAssociatedValues
-enum Model: Codable {
+public enum Model: Codable {
     
     case a(model: String)
     

@@ -79,7 +79,7 @@ public enum codable: ExtensionMacro, MemberMacro {
             return syntax
         }
         
-        return FunctionDeclSyntax(modifiers: declaration.modifiers.filter({ $0.name == .keyword(.public) || $0.name == .keyword(.open) }),
+        return FunctionDeclSyntax(modifiers: declaration.modifiers.filter({ $0.name.tokenKind == .keyword(.public) || $0.name.tokenKind == .keyword(.open) }),
                                   name: "encode",
                                   signature: .init(parameterClause: .init(parameters: .init([.init(firstName: "to", secondName: "encoder", type: .identifier("Encoder"))])),
                                                    effectSpecifiers: .init(throwsSpecifier: .keyword(.throws)))) {
@@ -115,7 +115,7 @@ public enum codable: ExtensionMacro, MemberMacro {
             return syntax
         }
         
-        var modifiers = declaration.modifiers.filter({ $0.name == .keyword(.public) || $0.name == .keyword(.open) })
+        var modifiers = declaration.modifiers.filter({ $0.name.tokenKind == .keyword(.public) || $0.name.tokenKind == .keyword(.open) })
         if let decl = declaration.as(ClassDeclSyntax.self) {
             if !decl.modifiers.contains(where: { $0.name == .keyword(.final) }) {
                 // if non final, must add `required`.
@@ -150,7 +150,7 @@ public enum codable: ExtensionMacro, MemberMacro {
             return MemberBlockItemSyntax(decl: caseDecl)
         }
         
-        return EnumDeclSyntax(modifiers: declaration.modifiers.filter({ $0.name == .keyword(.public) || $0.name == .keyword(.open) }),
+        return EnumDeclSyntax(modifiers: declaration.modifiers.filter({ $0.name.tokenKind == .keyword(.public) || $0.name.tokenKind == .keyword(.open) }),
                               name: "CodingKeys",
                               inheritanceClause: InheritanceClauseSyntax(inheritedTypes: [InheritedTypeSyntax(type: .identifier("CodingKey"))]),
                               memberBlock: MemberBlockSyntax(members: MemberBlockItemListSyntax(members)))

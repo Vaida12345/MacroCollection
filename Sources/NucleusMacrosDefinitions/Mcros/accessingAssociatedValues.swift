@@ -30,9 +30,9 @@ public enum accessingAssociatedValues: ExtensionMacro {
             }
         }
         
-        let modifiers = declaration.modifiers.filter({ $0.name == .keyword(.public) || $0.name == .keyword(.open) }).map(\.name.text).joined(separator: " ")
+        let modifiers = declaration.modifiers.filter({ $0.name.tokenKind == .keyword(.public) })
         
-        let asFunction = try FunctionDeclSyntax("\(raw: asDocumentation)\n\(raw: modifiers)func `as`<T>(_ property: EnumProperty<T>) -> T?") {
+        let asFunction = try FunctionDeclSyntax("\(raw: asDocumentation)\nfunc `as`<T>(_ property: EnumProperty<T>) -> T?") {
             try SwitchExprSyntax("switch property.root") {
                 for member in enumMembers {
                     SwitchCaseSyntax("case .\(member.name):") {
@@ -48,7 +48,7 @@ public enum accessingAssociatedValues: ExtensionMacro {
             "return nil"
         }
         
-        let isFunction = try FunctionDeclSyntax("\(raw: isDocumentation)\n\(raw: modifiers)func `is`<T>(_ property: EnumProperty<T>) -> Bool") {
+        let isFunction = try FunctionDeclSyntax("\(raw: isDocumentation)\nfunc `is`<T>(_ property: EnumProperty<T>) -> Bool") {
             try SwitchExprSyntax("switch property.root") {
                 for member in enumMembers {
                     SwitchCaseSyntax("case .\(member.name):") {
@@ -60,7 +60,7 @@ public enum accessingAssociatedValues: ExtensionMacro {
             "return false"
         }
         
-        let propertyStruct = try StructDeclSyntax("\(raw: propertyStructDocumentation.replacingOccurrences(of: "``Model``", with: "``\(declaration.name.text)``"))\n\(raw: modifiers)struct EnumProperty<T>") {
+        let propertyStruct = try StructDeclSyntax("\(raw: propertyStructDocumentation.replacingOccurrences(of: "``Model``", with: "``\(declaration.name.text)``"))\nstruct EnumProperty<T>") {
             
             try EnumDeclSyntax("""
                            /// The cases used as an identifier to the property.
@@ -87,7 +87,7 @@ public enum accessingAssociatedValues: ExtensionMacro {
             
         }
         
-        return try [ExtensionDeclSyntax("extension \(declaration.name)") {
+        return [ExtensionDeclSyntax(modifiers: modifiers, extendedType: IdentifierTypeSyntax(name: declaration.name)) {
             asFunction
             isFunction
             propertyStruct
