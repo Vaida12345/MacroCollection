@@ -136,12 +136,13 @@ public enum accessingAssociatedValues: ExtensionMacro {
         
     }
     
-    static let asDocumentation = """
+    static let asDocumentation: StaticString = """
     /// Returns the value associated with `property`, if the case matches.
     ///
     /// This method can be considered as an alternative to `if case let`.
     ///
     /// ```swift
+    /// @accessingAssociatedValues
     /// enum Model {
     ///     case car(name: String)
     ///     case bus(length: Int)
@@ -159,12 +160,13 @@ public enum accessingAssociatedValues: ExtensionMacro {
     /// - SeeAlso: If you are not interested in the value associated with `property`, see ``as(_:)``.
     """
     
-    static let isDocumentation = """
+    static let isDocumentation: StaticString = """
     /// Returns whether the given case matches `property`.
     ///
     /// This method can be considered as an alternative to `if case`.
     ///
     /// ```swift
+    /// @accessingAssociatedValues
     /// enum Model {
     ///     case car(name: String)
     ///     case bus(length: Int)
@@ -178,7 +180,7 @@ public enum accessingAssociatedValues: ExtensionMacro {
     /// - SeeAlso: If you want to retrieve the value associated with `property`, see ``as(_:)``.
     """
     
-    static let propertyStructDocumentation = """
+    static let propertyStructDocumentation: String = """
     /// Auto generated type to access properties for ``Model``.
     ///
     /// - Important: Please do not interact with this structure directly.

@@ -4,18 +4,9 @@ import Foundation
 import AVFoundation
 
 
-@accessingAssociatedValues
-public enum Model: Codable {
-    
-    case a(model: String)
-    
-    case b
-    
-    
+@codable
+class Cat {
+    let name: String = "cat"
+    let age: Int
 }
 
-
-let model = Model.a(model: "12345")
-if let value = model.as(.b) {
-    print(value)
-}
