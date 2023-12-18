@@ -9,6 +9,7 @@ import Foundation
 import SwiftSyntax
 import SwiftSyntaxMacros
 import SwiftSyntaxBuilder
+import SwiftDiagnostics
 
 
 public enum codable: ExtensionMacro, MemberMacro {
@@ -161,10 +162,27 @@ public enum codable: ExtensionMacro, MemberMacro {
                                           ignoreConstantProperties: Bool = true,
                                           handler: (_ variable: PatternBindingListSyntax.Element, _ decl: VariableDeclSyntax, _ name: String) throws -> T?
     ) rethrows -> [T] {
-        try memberwiseMap(for: declaration,
+        return try memberwiseMap(for: declaration,
                       ignoreComputedProperties: ignoreComputedProperties,
                       ignoreConstantProperties: ignoreConstantProperties) { variable, decl, name in
-            guard !decl.attributes.contains(where: { $0.as(AttributeSyntax.self)?.attributeName.as(IdentifierTypeSyntax.self)?.name.text == "transient" }) else { return nil }
+            guard !decl.attributes.contains(where: { $0.as(AttributeSyntax.self)?.attributeName.as(IdentifierTypeSyntax.self)?.name.text == "transient" }) else {
+                if variable.initializer == nil {
+                    var replacement = variable
+                    replacement.initializer = InitializerClauseSyntax(equal: .equalToken(leadingTrivia: .space, trailingTrivia: .space),
+                                                                      value: EditorPlaceholderExprSyntax(placeholder: .identifier("<#default value#>")))
+                    
+                    throw DiagnosticsError(diagnostics: [
+                        Diagnostic(node: variable,
+                                   message: .diagnostic(message: "A default value must be provided for transient values.",
+                                                        diagnosticID: "codable.\(name).missing_default_value"),
+                                   fixIt: .replace(message: .fixing(message: "Provide a default value", diagnosticID: "codable.\(name).missing_default_value"),
+                                                   oldNode: variable,
+                                                   newNode: replacement))
+                    ])
+                } else {
+                    return nil
+                }
+            }
             
             return try handler(variable, decl, name)
         }

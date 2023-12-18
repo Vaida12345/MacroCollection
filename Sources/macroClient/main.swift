@@ -3,12 +3,12 @@ import NucleusMacros
 import Foundation
 import AVFoundation
 
-
-@accessingAssociatedValues
-public enum ModelValue: Codable {
+@codable
+class Model {
     
-    case a(model: String)
+    var a: String
     
-    case b
+    @transient
+    var b: String = <#default value#>
     
 }
