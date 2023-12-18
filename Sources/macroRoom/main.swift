@@ -1,9 +1,11 @@
 import SwiftSyntaxMacros
 import SwiftSyntax
 
-let syntax: DeclSyntax =
+let syntax: ExprSyntax =
     """
-    self.init(a: a, b: b, c: c)
+    #if foo
+    { a + b }
+    #endif
     """
 
 dump(syntax)

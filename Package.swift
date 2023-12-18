@@ -12,15 +12,7 @@ let package = Package(
         .library(
             name: "NucleusMacros",
             targets: ["NucleusMacros"]
-        ),
-        .executable(
-            name: "macroRoom",
-            targets: ["macroRoom"]
-        ),
-        .executable(
-            name: "macroClient",
-            targets: ["macroClient"]
-        ),
+        )
     ],
     dependencies: [
         .package(url: "https://github.com/apple/swift-syntax.git", from: "509.0.0"),

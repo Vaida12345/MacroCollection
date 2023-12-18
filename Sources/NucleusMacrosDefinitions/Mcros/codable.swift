@@ -115,7 +115,15 @@ public enum codable: ExtensionMacro, MemberMacro {
             return syntax
         }
         
-        return InitializerDeclSyntax(modifiers: declaration.modifiers.filter({ $0.name == .keyword(.public) || $0.name == .keyword(.open) }),
+        var modifiers = declaration.modifiers.filter({ $0.name == .keyword(.public) || $0.name == .keyword(.open) })
+        if let decl = declaration.as(ClassDeclSyntax.self) {
+            if !decl.modifiers.contains(where: { $0.name == .keyword(.final) }) {
+                // if non final, must add `required`.
+                modifiers.append(.init(name: .keyword(.required)))
+            }
+        }
+        
+        return InitializerDeclSyntax(modifiers: modifiers,
                                      signature: .init(parameterClause: .init(parameters: .init([.init(firstName: "from", secondName: "decoder", type: .identifier("Decoder"))])),
                                                       effectSpecifiers: .init(throwsSpecifier: .keyword(.throws)))) {
             "let container = try decoder.container(keyedBy: CodingKeys.self)"
