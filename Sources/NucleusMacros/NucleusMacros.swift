@@ -1,5 +1,11 @@
-// The Swift Programming Language
-// https://docs.swift.org/swift-book
+//
+//  NucleusMacros.swift
+//  NucleusMacros
+//
+//  Created by Vaida on 2023/12/15.
+//
+
+import Foundation
 
 
 /// Generates the methods required by `Codable` for the stored properties.
@@ -14,3 +20,16 @@ public macro memberwiseInitializable() = #externalMacro(module: "NucleusMacrosDe
 /// Tells `@codable` macro not to persist the annotated property.
 @attached(peer)
 public macro transient() = #externalMacro(module: "NucleusMacrosDefinitions", type: "transient")
+
+/// Creates an url with compile-time validation
+@freestanding(expression)
+public macro url(_ string: StaticString) -> URL = #externalMacro(module: "NucleusMacrosDefinitions", type: "url")
+
+/// Creates a system-defined symbol with compile-time validation
+@available(macOS 11.0, iOS 15, watchOS 7, *)
+@freestanding(expression)
+public macro symbol(systemName: StaticString) -> String = #externalMacro(module: "NucleusMacrosDefinitions", type: "symbol")
+
+/// Generates methods for retrieving associated values and determining cases.
+@attached(extension, names: named(as(_:)), named(is(_:)), named(EnumProperty))
+public macro accessingAssociatedValues() = #externalMacro(module: "NucleusMacrosDefinitions", type: "accessingAssociatedValues")

@@ -1,10 +1,21 @@
 
 import NucleusMacros
+import Foundation
+import AVFoundation
 
 
-@codable
-class Model {
+@accessingAssociatedValues
+enum Model: Codable {
     
-    let a: String
+    case a(model: String)
     
+    case b
+    
+    
+}
+
+
+let model = Model.a(model: "12345")
+if let value = model.as(.b) {
+    print(value)
 }
