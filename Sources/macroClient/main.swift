@@ -1,14 +1,10 @@
 
-import NucleusMacros
+import Macros
 import Foundation
-import AVFoundation
 
-@codable
-class Model {
-    
-    var a: String
-    
-    @transient
-    var b: String = <#default value#>
+@available(macOS 14.0, *)
+@Observable
+@dataProviding
+final class Model {
     
 }

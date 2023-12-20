@@ -6,40 +6,41 @@ import CompilerPluginSupport
 
 let package = Package(
     name: "NucleusMacros",
-    platforms: [.macOS(.v10_15), .iOS(.v13), .tvOS(.v13), .watchOS(.v6), .macCatalyst(.v13)],
+    platforms: [
+        .macOS(.v13),
+        .iOS(.v16),
+        .watchOS(.v9),
+        .tvOS(.v16)
+    ],
     products: [
-        // Products define the executables and libraries a package produces, making them visible to other packages.
-        .library(
-            name: "NucleusMacros",
-            targets: ["NucleusMacros"]
-        )
+        .library(name: "NucleusMacros", targets: ["Macros"])
     ],
     dependencies: [
         .package(url: "https://github.com/apple/swift-syntax.git", from: "509.0.0"),
+        .package(name: "Nucleus", path: "/Users/vaida/Library/Mobile Documents/com~apple~CloudDocs/DataBase/Projects/Packages/DataBase"),
     ],
     targets: [
-        .macro(
-            name: "NucleusMacrosDefinitions",
-            dependencies: [
+        .macro(name: "MacrosDefinitions",
+               dependencies: [
+                "Nucleus",
                 .product(name: "SwiftSyntaxMacros", package: "swift-syntax"),
                 .product(name: "SwiftCompilerPlugin", package: "swift-syntax"),
                 .product(name: "SwiftSyntaxBuilder", package: "swift-syntax")
-            ]
-        ),
-        .target(name: "NucleusMacros", dependencies: ["NucleusMacrosDefinitions"]),
+               ]),
+        .target(name: "Macros", dependencies: ["MacrosDefinitions", "Nucleus"]),
         
         .executableTarget(name: "macroRoom", dependencies: [
             .product(name: "SwiftSyntaxMacros", package: "swift-syntax"),
             .product(name: "SwiftCompilerPlugin", package: "swift-syntax")
         ]),
         // A client of the library, which is able to use the macro in its own code.
-        .executableTarget(name: "macroClient", dependencies: ["NucleusMacros"]),
+        .executableTarget(name: "macroClient", dependencies: ["Macros"]),
 
         // A test target used to develop the macro implementation.
         .testTarget(
-            name: "NucleusMacrosTests",
+            name: "Tests",
             dependencies: [
-                "NucleusMacrosDefinitions",
+                "MacrosDefinitions",
                 .product(name: "SwiftSyntaxMacrosTestSupport", package: "swift-syntax"),
             ]
         ),

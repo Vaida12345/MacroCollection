@@ -11,7 +11,6 @@ import SwiftSyntaxMacros
 import SwiftUI
 
 
-@available(macOS 11.0, iOS 15, watchOS 7, *)
 public enum symbol: ExpressionMacro {
     
     public static func expansion(of node: some SwiftSyntax.FreestandingMacroExpansionSyntax,

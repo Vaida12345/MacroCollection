@@ -44,20 +44,25 @@ public enum codable: ExtensionMacro, MemberMacro {
                                                                                          message: "@codable should only be applied to `struct` or `class`") }
         
         var shouldDeclareInheritance = true
-        if let inheritedTypes = declaration.inheritanceClause?.inheritedTypes,
-           inheritedTypes.contains(where: { $0.type.as(IdentifierTypeSyntax.self)?.name.text == "Codable" }) {
-            shouldDeclareInheritance = false
+        if let inheritedTypes = declaration.inheritanceClause?.inheritedTypes {
+            shouldDeclareInheritance = !inheritedTypes.contains(where: { $0.type.as(IdentifierTypeSyntax.self)?.name.text == "Codable" })
         }
+        
+        let memberwiseInitializer = try memberwiseInitializable.expansion(of: node, providingMembersOf: declaration, in: context)
         
         return try [ExtensionDeclSyntax("extension \(type)\(raw: shouldDeclareInheritance ? ": Codable" : "")") {
             if let line = try generateCodingKeys(of: node, providingMembersOf: declaration, in: context) { .init(leadingTrivia: .newlines(2), decl: line, trailingTrivia: .newlines(2)) }
             if let line = try generateEncode(of: node, providingMembersOf: declaration, in: context) { .init(decl: line) }
+            
+            for decl in memberwiseInitializer {
+                decl
+            }
         }]
     }
     
-    private static func generateEncode(of node: SwiftSyntax.AttributeSyntax,
-                                       providingMembersOf declaration: some SwiftSyntax.DeclGroupSyntax,
-                                       in context: some SwiftSyntaxMacros.MacroExpansionContext
+    static func generateEncode(of node: SwiftSyntax.AttributeSyntax,
+                               providingMembersOf declaration: some SwiftSyntax.DeclGroupSyntax,
+                               in context: some SwiftSyntaxMacros.MacroExpansionContext
     ) throws -> FunctionDeclSyntax? {
         guard !declaration.memberBlock.members.contains(where: { member in
             guard let member = member.decl.as(FunctionDeclSyntax.self),
@@ -84,7 +89,9 @@ public enum codable: ExtensionMacro, MemberMacro {
                                   name: "encode",
                                   signature: .init(parameterClause: .init(parameters: .init([.init(firstName: "to", secondName: "encoder", type: .identifier("Encoder"))])),
                                                    effectSpecifiers: .init(throwsSpecifier: .keyword(.throws)))) {
-            "var container = encoder.container(keyedBy: CodingKeys.self)"
+            if !lines.isEmpty {
+                "var container = encoder.container(keyedBy: CodingKeys.self)"
+            }
             
             for line in lines {
                 line
@@ -92,9 +99,9 @@ public enum codable: ExtensionMacro, MemberMacro {
         }
     }
     
-    private static func generateDecode(of node: SwiftSyntax.AttributeSyntax,
-                                       providingMembersOf declaration: some SwiftSyntax.DeclGroupSyntax,
-                                       in context: some SwiftSyntaxMacros.MacroExpansionContext
+    static func generateDecode(of node: SwiftSyntax.AttributeSyntax,
+                               providingMembersOf declaration: some SwiftSyntax.DeclGroupSyntax,
+                               in context: some SwiftSyntaxMacros.MacroExpansionContext
     ) throws -> InitializerDeclSyntax? {
         guard !declaration.memberBlock.members.contains(where: { member in
             guard let member = member.decl.as(InitializerDeclSyntax.self) else { return false }
@@ -127,7 +134,9 @@ public enum codable: ExtensionMacro, MemberMacro {
         return InitializerDeclSyntax(modifiers: modifiers,
                                      signature: .init(parameterClause: .init(parameters: .init([.init(firstName: "from", secondName: "decoder", type: .identifier("Decoder"))])),
                                                       effectSpecifiers: .init(throwsSpecifier: .keyword(.throws)))) {
-            "let container = try decoder.container(keyedBy: CodingKeys.self)"
+            if !lines.isEmpty {
+                "let container = try decoder.container(keyedBy: CodingKeys.self)"
+            }
             
             for line in lines {
                 line
@@ -135,9 +144,9 @@ public enum codable: ExtensionMacro, MemberMacro {
         }
     }
     
-    private static func generateCodingKeys(of node: SwiftSyntax.AttributeSyntax,
-                                           providingMembersOf declaration: some SwiftSyntax.DeclGroupSyntax,
-                                           in context: some SwiftSyntaxMacros.MacroExpansionContext
+    static func generateCodingKeys(of node: SwiftSyntax.AttributeSyntax,
+                                   providingMembersOf declaration: some SwiftSyntax.DeclGroupSyntax,
+                                   in context: some SwiftSyntaxMacros.MacroExpansionContext
     ) throws -> EnumDeclSyntax? {
         guard !declaration.memberBlock.members.contains(where: { member in
             guard let member = member.decl.as(EnumDeclSyntax.self),
@@ -158,9 +167,9 @@ public enum codable: ExtensionMacro, MemberMacro {
     }
     
     fileprivate static func _memberwiseMap<T>(for declaration: some SwiftSyntax.DeclGroupSyntax,
-                                          ignoreComputedProperties: Bool = true,
-                                          ignoreConstantProperties: Bool = true,
-                                          handler: (_ variable: PatternBindingListSyntax.Element, _ decl: VariableDeclSyntax, _ name: String) throws -> T?
+                                              ignoreComputedProperties: Bool = true,
+                                              ignoreConstantProperties: Bool = true,
+                                              handler: (_ variable: PatternBindingListSyntax.Element, _ decl: VariableDeclSyntax, _ name: String) throws -> T?
     ) rethrows -> [T] {
         return try memberwiseMap(for: declaration,
                       ignoreComputedProperties: ignoreComputedProperties,

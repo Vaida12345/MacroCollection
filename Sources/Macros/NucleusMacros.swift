@@ -50,7 +50,7 @@ import Foundation
 /// The other generated codes are updated according.
 @attached(extension, names: named(encode(to:)), named(CodingKeys), conformances: Codable)
 @attached(member, names: named(init(from:)))
-public macro codable() = #externalMacro(module: "NucleusMacrosDefinitions", type: "codable")
+public macro codable() = #externalMacro(module: "MacrosDefinitions", type: "codable")
 
 /// Generates an initializer including all the stored properties. if it is possible, an `init()` will also be synthesized.
 ///
@@ -72,7 +72,7 @@ public macro codable() = #externalMacro(module: "NucleusMacrosDefinitions", type
 ///
 /// Sometimes, type cannot be interfered, such as the ones assigned by calling functions. In this case, an error will be emitted asking to declare type explicitly.
 @attached(member, names: named(init))
-public macro memberwiseInitializable() = #externalMacro(module: "NucleusMacrosDefinitions", type: "memberwiseInitializable")
+public macro memberwiseInitializable() = #externalMacro(module: "MacrosDefinitions", type: "memberwiseInitializable")
 
 /// Tells `@codable` macro not to persist the annotated property.
 ///
@@ -96,7 +96,7 @@ public macro memberwiseInitializable() = #externalMacro(module: "NucleusMacrosDe
 ///
 /// The other generated codes are updated according.
 @attached(peer)
-public macro transient() = #externalMacro(module: "NucleusMacrosDefinitions", type: "transient")
+public macro transient() = #externalMacro(module: "MacrosDefinitions", type: "transient")
 
 /// Creates an url with compile-time validation
 ///
@@ -106,7 +106,7 @@ public macro transient() = #externalMacro(module: "NucleusMacrosDefinitions", ty
 /// // error: The given string is not an url.
 /// ```
 @freestanding(expression)
-public macro url(_ string: StaticString) -> URL = #externalMacro(module: "NucleusMacrosDefinitions", type: "url")
+public macro url(_ string: StaticString) -> URL = #externalMacro(module: "MacrosDefinitions", type: "url")
 
 /// Creates a system-defined symbol with compile-time validation.
 ///
@@ -115,9 +115,8 @@ public macro url(_ string: StaticString) -> URL = #externalMacro(module: "Nucleu
 /// Image(systemName: #symbol("macro"))
 /// // error: No such symbol `macro`.
 /// ```
-@available(macOS 11.0, iOS 15, watchOS 7, *)
 @freestanding(expression)
-public macro symbol(_ name: StaticString) -> String = #externalMacro(module: "NucleusMacrosDefinitions", type: "symbol")
+public macro symbol(_ name: StaticString) -> String = #externalMacro(module: "MacrosDefinitions", type: "symbol")
 
 /// Generates methods for retrieving associated values and determining cases.
 ///
@@ -141,4 +140,10 @@ public macro symbol(_ name: StaticString) -> String = #externalMacro(module: "Nu
 ///
 /// The `as(_:)` would returns the associated value if the case matches and there is any, while `is(_:)` would return a `Bool` determining whether the case matches.
 @attached(extension, names: named(as(_:)), named(is(_:)), named(EnumProperty))
-public macro accessingAssociatedValues() = #externalMacro(module: "NucleusMacrosDefinitions", type: "accessingAssociatedValues")
+public macro accessingAssociatedValues() = #externalMacro(module: "MacrosDefinitions", type: "accessingAssociatedValues")
+
+
+/// 
+@attached(extension, names: named(encode(to:)), named(CodingKeys), conformances: DataProvider)
+@attached(member, names: named(init(from:)), named(init), named(instance))
+public macro dataProviding() = #externalMacro(module: "MacrosDefinitions", type: "dataProviding")

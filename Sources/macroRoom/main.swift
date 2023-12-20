@@ -2,7 +2,7 @@ import SwiftSyntaxMacros
 import SwiftSyntax
 
 let syntax: DeclSyntax = """
-let a = <#default value#>
+class Model : Codable, Identifiable {}
 """
 
-dump(syntax)
+print(syntax.debugDescription(includeTrivia: true))
