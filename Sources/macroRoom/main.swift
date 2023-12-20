@@ -2,7 +2,16 @@ import SwiftSyntaxMacros
 import SwiftSyntax
 
 let syntax: DeclSyntax = """
-class Model : Codable, Identifiable {}
+struct App: App {
+
+    @State private var model = Model()
+
+    var body: some View {
+        ContentView()
+            .foregroudStyle(.black)
+            .provided(by: [Provider.self])
+    }
+}
 """
 
-print(syntax.debugDescription(includeTrivia: true))
+dump(syntax)

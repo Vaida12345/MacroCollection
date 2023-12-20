@@ -20,14 +20,14 @@ final class NucleusMacrosTests: XCTestCase {
     func testMacro() throws {
         assertMacroExpansion(
              """
-            @dataProviding
-            class Model {
+            struct App: App {
             
-                var a: String
-                
-                @transient
-                var b: String
-                
+                @State private var model = Model()
+            
+                var body: some View {
+                    ContentView()
+                        .foregroudStyle(.black)
+                }
             }
             """,
              expandedSource: """

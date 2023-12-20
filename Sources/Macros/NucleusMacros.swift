@@ -147,3 +147,6 @@ public macro accessingAssociatedValues() = #externalMacro(module: "MacrosDefinit
 @attached(extension, names: named(encode(to:)), named(CodingKeys), conformances: DataProvider)
 @attached(member, names: named(init(from:)), named(init), named(instance))
 public macro dataProviding() = #externalMacro(module: "MacrosDefinitions", type: "dataProviding")
+
+@attached(member, names: named(ApplicationDelegate), named(provided(by:)), arbitrary)
+public macro providedByData() = #externalMacro(module: "MacrosDefinitions", type: "providedByData")

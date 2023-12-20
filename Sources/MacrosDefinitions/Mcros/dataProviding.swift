@@ -57,7 +57,7 @@ public enum dataProviding: MemberMacro, ExtensionMacro {
         let instanceDecl: DeclSyntax = """
         /// The main ``DataProvider`` to work with.
         ///
-        /// In the `@main App` declaration, declare a `@state` of `instance`. In this way, this structure can be accessed across the app, and any mutation is observed in all views.
+        /// This structure can be accessed across the app, and any mutations are observed in all views.
         static var instance: \(declaration.name) = {
             do {
                 return try \(declaration.name)(at: \(declaration.name).storageItem, format: .plist)
