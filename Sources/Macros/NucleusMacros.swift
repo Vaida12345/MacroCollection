@@ -143,10 +143,65 @@ public macro symbol(_ name: StaticString) -> String = #externalMacro(module: "Ma
 public macro accessingAssociatedValues() = #externalMacro(module: "MacrosDefinitions", type: "accessingAssociatedValues")
 
 
-/// 
-@attached(extension, names: named(encode(to:)), named(CodingKeys), conformances: DataProvider)
+/// Declare a `class` to be ``DataProvider``.
+///
+/// Use this macro to declare a class to be ``DataProvider``
+/// ```swift
+/// @Observable
+/// @dataProviding
+/// final class ModelProvider { ... }
+/// ```
+///
+/// The models are `codable` by default, you can override the coding of certain properties using the ``transient()`` macro.
+///
+/// Then, in your `@main App`, attach the ``provided(by:)`` macro.
+/// ```swift
+/// @provided(by: [ModelProvider.self])
+/// struct testApp: App { ... }
+/// ```
+///
+/// Use the `environment` view modifiers to store this provider in the environment
+/// ```swift
+/// WindowGroup {
+///     ContentView()
+///         .environment(modelProvider)
+/// }
+/// ```
+///
+/// which can be access by the children view by calling `@Enviroment`.
+/// ```swift
+/// @Enviroment(ModelProvider.self) private var modelProvider
+/// ```
+@attached(extension, names: named(encode(to:)), named(CodingKeys), named(storageItem), named(save()), conformances: DataProvider)
 @attached(member, names: named(init(from:)), named(init), named(instance))
 public macro dataProviding() = #externalMacro(module: "MacrosDefinitions", type: "dataProviding")
 
-@attached(member, names: named(ApplicationDelegate), named(provided(by:)), arbitrary)
-public macro providedByData() = #externalMacro(module: "MacrosDefinitions", type: "providedByData")
+/// Attach this macro to the `@main App` to use the `DataProvider`s declared.
+///
+/// Attach the ``provided(by:)`` macro.
+/// ```swift
+/// @main
+/// @provided(by: [ModelProvider.self])
+/// struct testApp: App { ... }
+/// ```
+///
+/// Use the `environment` view modifiers to store this provider in the environment
+/// ```swift
+/// WindowGroup {
+///     ContentView()
+///         .environment(modelProvider)
+/// }
+/// ```
+///
+/// which can be access by the children view by calling `@Enviroment`.
+/// ```swift
+/// @Enviroment(ModelProvider.self) private var modelProvider
+/// ```
+///
+/// The providers can be declared using the ``dataProviding()`` macro.
+/// ```swift
+/// @dataProviding
+/// final class ModelProvider { ... }
+/// ```
+@attached(member, names: named(ApplicationDelegate), arbitrary)
+public macro provided(by providers: [any DataProvider.Type]) = #externalMacro(module: "MacrosDefinitions", type: "providedBy")

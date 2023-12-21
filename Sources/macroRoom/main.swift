@@ -1,17 +1,19 @@
 import SwiftSyntaxMacros
 import SwiftSyntax
+import UIKit
 
 let syntax: DeclSyntax = """
+@provided(by: [Model.self])
 struct App: App {
 
-    @State private var model = Model()
+    @NSApplicationDelegateAdaptor(ApplicationDelegate.self) private var applicationDelegate
 
     var body: some View {
         ContentView()
             .foregroudStyle(.black)
-            .provided(by: [Provider.self])
     }
 }
 """
 
 dump(syntax)
+

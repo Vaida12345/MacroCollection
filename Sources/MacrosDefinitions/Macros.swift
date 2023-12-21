@@ -12,6 +12,7 @@ struct NucleusMacrosPlugin: CompilerPlugin {
         url.self,
         symbol.self,
         accessingAssociatedValues.self,
-        dataProviding.self
+        dataProviding.self,
+        providedBy.self
     ]
 }

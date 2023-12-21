@@ -11,7 +11,6 @@ import SwiftSyntaxMacros
 import SwiftSyntaxBuilder
 import SwiftDiagnostics
 import SwiftCompilerPluginMessageHandling
-import Nucleus
 
 
 public enum dataProviding: MemberMacro, ExtensionMacro {
@@ -41,10 +40,28 @@ public enum dataProviding: MemberMacro, ExtensionMacro {
                                                 diagnosticID: id),
                            fixIts: [
                             FixIt(message: .fixing(message: "declare `Observable`", diagnosticID: id),
-                                  changes: [.replace(oldNode: declaration.attributes.cast(Syntax.self), newNode: replacement_observable.cast(Syntax.self))]),
+                                  changes: [.replace(oldNode: declaration.attributes.cast(Syntax.self), 
+                                                     newNode: replacement_observable.cast(Syntax.self))]),
                             FixIt(message: .fixing(message: "declare `ObservableObject`", diagnosticID: id),
-                                  changes: [.replace(oldNode: declaration.cast(Syntax.self), newNode: replacement_observableObject.cast(Syntax.self))])
+                                  changes: [.replace(oldNode: declaration.cast(Syntax.self), 
+                                                     newNode: replacement_observableObject.cast(Syntax.self))])
                            ])
+            ])
+        }
+        
+        guard declaration.modifiers.contains(where: { $0.name.tokenKind == .keyword(.final) }) else {
+            var replacement = declaration.modifiers
+            replacement.append(.init(name: .keyword(.final)))
+            
+            let id =  "\(Self.self).dataProviding.requiresFinal"
+            
+            throw DiagnosticsError(diagnostics: [
+                Diagnostic(node: declaration.attributes,
+                           message: .diagnostic(message: "DataProvider should be declared `final`",
+                                                diagnosticID: id),
+                           fixIt: .replace(message: .fixing(message: "declare `final`", diagnosticID: id), 
+                                           oldNode: declaration.modifiers,
+                                           newNode: replacement))
             ])
         }
         
@@ -67,7 +84,7 @@ public enum dataProviding: MemberMacro, ExtensionMacro {
         }()
         """
         
-        return [instanceDecl.cast(DeclSyntax.self)].appending(decodableDecl?.cast(DeclSyntax.self)) + memberwiseInitializers
+        return [instanceDecl.cast(DeclSyntax.self)] + (decodableDecl != nil ? [decodableDecl!.cast(DeclSyntax.self)] : []) + memberwiseInitializers
     }
     
     public static func expansion(of node: SwiftSyntax.AttributeSyntax,
@@ -91,7 +108,24 @@ public enum dataProviding: MemberMacro, ExtensionMacro {
             extensionTypes = ""
         }
         
+        let dataProviderExtensions: DeclSyntax = """
+            /// The ``FinderItem`` indicating the location where this ``DataProvider`` is persisted on disk.
+            fileprivate static var storageItem: FinderItem {
+                get throws {
+                    try .dataProviderDirectory.with(subPath: "\(declaration.name).plist")
+                }
+            }
+            
+            /// Save the encoded provider to ``storageItem`` using `.plist`.
+            @inlinable
+            func save() throws {
+                try Self.storageItem.removeIfExists()
+                try self.write(to: Self.storageItem, using: .plist)
+            }
+        """
+        
         return try [ExtensionDeclSyntax("extension \(type)\(raw: extensionTypes)") {
+            dataProviderExtensions
             if let line = try codable.generateEncode(of: node, providingMembersOf: declaration, in: context) { line }
             if let line = try codable.generateCodingKeys(of: node, providingMembersOf: declaration, in: context) { line }
         }]

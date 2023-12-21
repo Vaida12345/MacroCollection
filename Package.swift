@@ -16,18 +16,16 @@ let package = Package(
         .library(name: "NucleusMacros", targets: ["Macros"])
     ],
     dependencies: [
-        .package(url: "https://github.com/apple/swift-syntax.git", from: "509.0.0"),
-        .package(name: "Nucleus", path: "/Users/vaida/Library/Mobile Documents/com~apple~CloudDocs/DataBase/Projects/Packages/DataBase"),
+        .package(url: "https://github.com/apple/swift-syntax.git", from: "509.0.0")
     ],
     targets: [
         .macro(name: "MacrosDefinitions",
                dependencies: [
-                "Nucleus",
                 .product(name: "SwiftSyntaxMacros", package: "swift-syntax"),
                 .product(name: "SwiftCompilerPlugin", package: "swift-syntax"),
                 .product(name: "SwiftSyntaxBuilder", package: "swift-syntax")
                ]),
-        .target(name: "Macros", dependencies: ["MacrosDefinitions", "Nucleus"]),
+        .target(name: "Macros", dependencies: ["MacrosDefinitions"]),
         
         .executableTarget(name: "macroRoom", dependencies: [
             .product(name: "SwiftSyntaxMacros", package: "swift-syntax"),
