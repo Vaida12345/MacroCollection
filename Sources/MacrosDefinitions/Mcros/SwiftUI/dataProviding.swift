@@ -77,7 +77,9 @@ public enum dataProviding: MemberMacro, ExtensionMacro {
         /// This structure can be accessed across the app, and any mutations are observed in all views.
         static var instance: \(declaration.name) = {
             do {
-                return try \(declaration.name)(at: \(declaration.name).storageItem, format: .plist)
+                let decoder = PropertyListDecoder()
+                let data = try Data(contentsOf: \(declaration.name).storageLocation)
+                return try decoder.decode(\(declaration.name).self, from: data)
             } catch {
                 return \(declaration.name)()
             }
@@ -108,24 +110,7 @@ public enum dataProviding: MemberMacro, ExtensionMacro {
             extensionTypes = ""
         }
         
-        let dataProviderExtensions: DeclSyntax = """
-            /// The ``FinderItem`` indicating the location where this ``DataProvider`` is persisted on disk.
-            fileprivate static var storageItem: FinderItem {
-                get throws {
-                    try .dataProviderDirectory.with(subPath: "\(declaration.name).plist")
-                }
-            }
-            
-            /// Save the encoded provider to ``storageItem`` using `.plist`.
-            @inlinable
-            func save() throws {
-                try Self.storageItem.removeIfExists()
-                try self.write(to: Self.storageItem, using: .plist)
-            }
-        """
-        
         return try [ExtensionDeclSyntax("extension \(type)\(raw: extensionTypes)") {
-            dataProviderExtensions
             if let line = try codable.generateEncode(of: node, providingMembersOf: declaration, in: context) { line }
             if let line = try codable.generateCodingKeys(of: node, providingMembersOf: declaration, in: context) { line }
         }]
