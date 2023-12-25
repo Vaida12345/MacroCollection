@@ -48,7 +48,7 @@ import Foundation
 /// ```
 ///
 /// The other generated codes are updated according.
-@attached(extension, names: named(encode(to:)), named(CodingKeys), conformances: Codable)
+@attached(extension, conformances: Codable, names: named(encode(to:)), named(CodingKeys))
 @attached(member, names: named(init(from:)))
 public macro codable() = #externalMacro(module: "MacrosDefinitions", type: "codable")
 
@@ -172,7 +172,7 @@ public macro accessingAssociatedValues() = #externalMacro(module: "MacrosDefinit
 /// ```swift
 /// @Enviroment(ModelProvider.self) private var modelProvider
 /// ```
-@attached(extension, names: named(encode(to:)), named(CodingKeys), named(storageItem), named(save()), conformances: DataProvider)
+@attached(extension, conformances: DataProvider, names: named(encode(to:)), named(CodingKeys), named(storageItem), named(save()))
 @attached(member, names: named(init(from:)), named(init), named(instance))
 public macro dataProviding() = #externalMacro(module: "MacrosDefinitions", type: "dataProviding")
 

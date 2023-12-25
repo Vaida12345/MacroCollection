@@ -102,17 +102,26 @@ extension Macro {
                                                 message: String
     ) -> DiagnosticsError {
         var replacement = declaration.attributes
-        replacement.remove(at: declaration.attributes.firstIndex(where: { $0.as(AttributeSyntax.self)!.attributeName.as(IdentifierTypeSyntax.self)!.name.text == macroName.dropFirst() })!)
-        
-        return DiagnosticsError(diagnostics: [
-            Diagnostic(node: declaration.attributes,
-                       message: .diagnostic(message: message,
-                                            diagnosticID: "\(Self.self).shouldRemoveMacroError.\(macroName)"
-                                           ),
-                       fixIt: .replace(message: .fixing(message: "Remove `\(macroName)`", diagnosticID: "\(Self.self).shouldRemoveMacroError.\(macroName)"),
-                                       oldNode: declaration.attributes,
-                                       newNode: replacement))
-        ])
+        if let declarationIndex = declaration.attributes.firstIndex(where: { $0.as(AttributeSyntax.self)?.attributeName.as(IdentifierTypeSyntax.self)?.name.text == String(macroName.dropFirst()) }) {
+            replacement.remove(at: declarationIndex)
+            
+            return DiagnosticsError(diagnostics: [
+                Diagnostic(node: declaration.attributes,
+                           message: .diagnostic(message: message,
+                                                diagnosticID: "\(Self.self).shouldRemoveMacroError.\(macroName)"
+                                               ),
+                           fixIt: .replace(message: .fixing(message: "Remove `\(macroName)`", diagnosticID: "\(Self.self).shouldRemoveMacroError.\(macroName)"),
+                                           oldNode: declaration.attributes,
+                                           newNode: replacement))
+            ])
+        } else {
+            return DiagnosticsError(diagnostics: [
+                Diagnostic(node: declaration.attributes,
+                           message: .diagnostic(message: message,
+                                                diagnosticID: "\(Self.self).shouldRemoveMacroError.\(macroName)"
+                                               ))
+            ])
+        }
     }
 }
 

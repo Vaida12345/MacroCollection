@@ -20,6 +20,7 @@ final class NucleusMacrosTests: XCTestCase {
     func testMacro() throws {
         assertMacroExpansion(
              """
+            @codable
             struct App: App {
             
                 @State private var model = Model()
