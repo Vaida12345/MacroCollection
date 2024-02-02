@@ -1,6 +1,5 @@
 import SwiftSyntaxMacros
 import SwiftSyntax
-import UIKit
 
 let syntax: DeclSyntax = """
 @provided(by: [Model.self])

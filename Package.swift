@@ -4,35 +4,32 @@
 import PackageDescription
 import CompilerPluginSupport
 
-let package = Package(
-    name: "NucleusMacros",
+let package = Package (
+    name: "StratumMacros",
     platforms: [
         .macOS(.v13),
         .iOS(.v16),
         .watchOS(.v9),
         .tvOS(.v16)
-    ],
-    products: [
-        .library(name: "NucleusMacros", targets: ["Macros"])
-    ],
-    dependencies: [
+    ], products: [
+        .library(name: "StratumMacros", targets: ["StratumMacros"])
+    ], dependencies: [
         .package(url: "https://github.com/apple/swift-syntax.git", from: "509.0.0")
-    ],
-    targets: [
+    ], targets: [
         .macro(name: "MacrosDefinitions",
                dependencies: [
                 .product(name: "SwiftSyntaxMacros", package: "swift-syntax"),
                 .product(name: "SwiftCompilerPlugin", package: "swift-syntax"),
                 .product(name: "SwiftSyntaxBuilder", package: "swift-syntax")
                ]),
-        .target(name: "Macros", dependencies: ["MacrosDefinitions"]),
+        .target(name: "StratumMacros", dependencies: ["MacrosDefinitions"], path: "Sources/Macros"),
         
         .executableTarget(name: "macroRoom", dependencies: [
             .product(name: "SwiftSyntaxMacros", package: "swift-syntax"),
             .product(name: "SwiftCompilerPlugin", package: "swift-syntax")
         ]),
         // A client of the library, which is able to use the macro in its own code.
-        .executableTarget(name: "macroClient", dependencies: ["Macros"]),
+        .executableTarget(name: "macroClient", dependencies: ["StratumMacros"]),
 
         // A test target used to develop the macro implementation.
         .testTarget(
