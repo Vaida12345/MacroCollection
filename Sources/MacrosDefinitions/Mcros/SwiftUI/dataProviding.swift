@@ -75,7 +75,7 @@ public enum dataProviding: MemberMacro, ExtensionMacro {
         /// The main ``DataProvider`` to work with.
         ///
         /// This structure can be accessed across the app, and any mutations are observed in all views.
-        static var instance: \(declaration.name) = {
+        static var instance: \(declaration.name.with(\.trailingTrivia, [])) = {
             do {
                 let decoder = PropertyListDecoder()
                 let data = try Data(contentsOf: \(declaration.name).storageLocation)

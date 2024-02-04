@@ -172,6 +172,19 @@ public macro accessingAssociatedValues() = #externalMacro(module: "MacrosDefinit
 /// ```swift
 /// @Enviroment(ModelProvider.self) private var modelProvider
 /// ```
+///
+/// ## Macro Expansion
+/// The `ModelProvider` declared above will be expanded to
+///
+/// ```swift
+/// final class ModelProvider {
+///     static var instance: Model
+/// }
+///
+/// extension ModelProvider: Codable { ... }
+/// ```
+///
+/// The `instance` can be used to refer to this singleton, on mutation of this value, views will be updated automatically.
 @attached(extension, conformances: DataProvider, names: named(encode(to:)), named(CodingKeys), named(storageItem), named(save()))
 @attached(member, names: named(init(from:)), named(init), named(instance))
 public macro dataProviding() = #externalMacro(module: "MacrosDefinitions", type: "dataProviding")
@@ -185,7 +198,7 @@ public macro dataProviding() = #externalMacro(module: "MacrosDefinitions", type:
 /// struct testApp: App { ... }
 /// ```
 ///
-/// Use the `environment` view modifiers to store this provider in the environment
+/// Use the `environment` view modifiers to store this provider in the environment. The name is the same as the class, with the leading character being lowercased.
 /// ```swift
 /// WindowGroup {
 ///     ContentView()
@@ -203,5 +216,17 @@ public macro dataProviding() = #externalMacro(module: "MacrosDefinitions", type:
 /// @dataProviding
 /// final class ModelProvider { ... }
 /// ```
+///
+/// ## Macro Expansion
+/// The `testApp` declared above will be expanded to
+///
+/// ```swift
+/// @State var modelProvider = ModelProvider.instance
+/// @ApplicationDelegateAdaptor var applicationDelegate
+/// ```
+/// - term modelProvider: The `modelProvider`, which is the class name with leading character lowercased, can be passed around in the environment.
+/// - term applicationDelegate: A simple application delegate, which is defined to save the `modelProvider` when application closes. On macOS, it will also tell the system to close the application after the last window closed.
+///
+/// - bug: Will fail to compile if the user defines its own `applicationDelegate`.
 @attached(member, names: named(ApplicationDelegate), arbitrary)
 public macro provided(by providers: [any DataProvider.Type]) = #externalMacro(module: "MacrosDefinitions", type: "providedBy")
