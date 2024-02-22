@@ -78,7 +78,7 @@ public enum dataProviding: MemberMacro, ExtensionMacro {
         static var instance: \(declaration.name.with(\.trailingTrivia, [])) = {
             do {
                 let decoder = PropertyListDecoder()
-                let data = try Data(contentsOf: \(declaration.name.trimmed)).storageLocation)
+                let data = try Data(contentsOf: \(declaration.name.trimmed).storageLocation)
                 return try decoder.decode(\(declaration.name.trimmed).self, from: data)
             } catch {
                 return \(declaration.name.trimmed)()
