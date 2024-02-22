@@ -6,7 +6,7 @@ import SwiftUI
 
 @available(macOS 14.0, *)
 @available(iOS 17.0, *)
-@provided(by: [Model.self])
+@provided(by: [ModelProvider.self])
 struct testApp: App {
     
     var body: some Scene {
@@ -20,6 +20,6 @@ struct testApp: App {
 @available(macOS 14.0, *)
 @dataProviding
 @Observable
-final class Model {
+final class ModelProvider {
     
 }

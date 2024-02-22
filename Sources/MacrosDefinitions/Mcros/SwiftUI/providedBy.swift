@@ -69,12 +69,20 @@ public enum providedBy: MemberMacro {
             func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool {
                 true
             }
+        
+            func applicationDidFinishLaunching(_ notification: Notification) {
+                try? FileManager.default.createDirectory(at: URL(filePath: NSHomeDirectory() + "/Library/Application Support/DataProviders", directoryHint: .isDirectory), withIntermediateDirectories: true)
+            }
         }
         #else
         final class ApplicationDelegate: NSObject, UIApplicationDelegate {
         
             func applicationWillTerminate(_ application: UIApplication) {
                 \(raw: providers.map({ "try? \($0).instance.save()" }).joined(separator: "\n"))
+            }
+        
+            func applicationDidFinishLaunching(_ application: UIApplication) {
+                try? FileManager.default.createDirectory(at: URL(filePath: NSHomeDirectory() + "/Library/Application Support/DataProviders", directoryHint: .isDirectory), withIntermediateDirectories: true)
             }
         }
         #endif

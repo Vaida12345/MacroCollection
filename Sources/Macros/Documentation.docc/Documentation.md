@@ -14,7 +14,7 @@ This package provides a collection of macros.
 ```swift
 dependencies: [
     .package(name: "StratumMacros", 
-             path: "~/Library/Mobile Documents/com~apple~CloudDocs/DataBase/Projects/Packages/NucleusMacros")
+             path: "~/Library/Mobile Documents/com~apple~CloudDocs/DataBase/Projects/Packages/StratumMacros")
 ]
 ```
 and then adding the appropriate module to your target dependencies.
@@ -23,5 +23,5 @@ and then adding the appropriate module to your target dependencies.
 
 You can add this framework as a dependency to your Xcode project by clicking File -> Swift Packages -> Add Package Dependency. The package is located at:
 ```
-~/Library/Mobile Documents/com~apple~CloudDocs/DataBase/Projects/Packages/NucleusMacros
+~/Library/Mobile Documents/com~apple~CloudDocs/DataBase/Projects/Packages/StratumMacros
 ```

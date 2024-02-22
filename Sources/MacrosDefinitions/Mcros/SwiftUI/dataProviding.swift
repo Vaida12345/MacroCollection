@@ -72,16 +72,16 @@ public enum dataProviding: MemberMacro, ExtensionMacro {
         let decodableDecl = try codable.generateDecode(of: node, providingMembersOf: declaration, in: context)
         let memberwiseInitializers = try memberwiseInitializable.expansion(of: node, providingMembersOf: declaration, in: context)
         let instanceDecl: DeclSyntax = """
-        /// The main ``DataProvider`` to work with.
+        /// The main ``\(declaration.name.with(\.trailingTrivia, []))`` to work with.
         ///
         /// This structure can be accessed across the app, and any mutations are observed in all views.
         static var instance: \(declaration.name.with(\.trailingTrivia, [])) = {
             do {
                 let decoder = PropertyListDecoder()
-                let data = try Data(contentsOf: \(declaration.name).storageLocation)
-                return try decoder.decode(\(declaration.name).self, from: data)
+                let data = try Data(contentsOf: \(declaration.name.trimmed)).storageLocation)
+                return try decoder.decode(\(declaration.name.trimmed).self, from: data)
             } catch {
-                return \(declaration.name)()
+                return \(declaration.name.trimmed)()
             }
         }()
         """

@@ -41,16 +41,12 @@ extension DataProvider {
     /// The path indicating the location where this ``DataProvider`` is persisted on disk.
     @inlinable
     public static var storageLocation: URL {
-        URL(filePath: NSHomeDirectory() + "/Library/Application Support/DataProviders" + "\(Self.self).plist", directoryHint: .isDirectory)
+        URL(filePath: NSHomeDirectory() + "/Library/Application Support/DataProviders/\(Self.self).plist", directoryHint: .notDirectory)
     }
     
     /// Save the encoded provider to ``storageItem`` using `.plist`.
     @inlinable
     public func save() throws {
-        if FileManager.default.fileExists(atPath: Self.storageLocation.path) {
-            try FileManager.default.removeItem(at: Self.storageLocation)
-        }
-        
         let encoder = PropertyListEncoder()
         encoder.outputFormat = .binary
         try encoder.encode(self).write(to: Self.storageLocation)
