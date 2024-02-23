@@ -44,7 +44,7 @@ extension DataProvider {
         URL(filePath: NSHomeDirectory() + "/Library/Application Support/DataProviders/\(Self.self).plist", directoryHint: .notDirectory)
     }
     
-    /// Save the encoded provider to ``storageItem`` using `.plist`.
+    /// Save the encoded provider to ``storageLocation`` using `.plist`.
     @inlinable
     public func save() throws {
         let encoder = PropertyListEncoder()

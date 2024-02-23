@@ -48,6 +48,11 @@ import Foundation
 /// ```
 ///
 /// The other generated codes are updated according.
+///
+/// ## Topics
+///
+/// ### Controlling Encode
+/// - ``transient()``
 @attached(extension, conformances: Codable, names: named(encode(to:)), named(CodingKeys))
 @attached(member, names: named(init(from:)))
 public macro codable() = #externalMacro(module: "MacrosDefinitions", type: "codable")
@@ -191,6 +196,17 @@ public macro accessingAssociatedValues() = #externalMacro(module: "MacrosDefinit
 /// ```
 ///
 /// The `instance` can be used to refer to this singleton, on mutation of this value, views will be updated automatically.
+///
+/// ## Topics
+///
+/// ### Macros
+///
+///- ``provided(by:)``
+///- ``environment(_:)-9r4s2``
+///
+/// ### Protocols
+///
+/// - ``DataProvider``
 @attached(extension, conformances: DataProvider, names: named(encode(to:)), named(CodingKeys), named(storageItem), named(save()))
 @attached(member, names: named(init(from:)), named(init), named(instance))
 public macro dataProviding() = #externalMacro(module: "MacrosDefinitions", type: "dataProviding")

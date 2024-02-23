@@ -25,3 +25,24 @@ You can add this framework as a dependency to your Xcode project by clicking Fil
 ```
 ~/Library/Mobile Documents/com~apple~CloudDocs/DataBase/Projects/Packages/StratumMacros
 ```
+
+## Topics
+
+### Extending Swift
+A set of macros aiming to extend the functionality of Swift
+
+- ``accessingAssociatedValues()``
+- ``codable()``
+- ``memberwiseInitializable()``
+
+### SwiftUI
+A set of macros to make coding in SwiftUI easier
+
+- ``dataProviding()``
+- ``environment(_:)-72eo5``
+
+### Compile time Constants
+A set of macros offering compile time checking
+
+- ``symbol(_:)``
+- ``url(_:)``
