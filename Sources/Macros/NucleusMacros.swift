@@ -173,6 +173,12 @@ public macro accessingAssociatedValues() = #externalMacro(module: "MacrosDefinit
 /// @Enviroment(ModelProvider.self) private var modelProvider
 /// ```
 ///
+/// > Tip:
+/// > You could also use the ``environment(_:)-9r4s2`` macro.
+/// > ```swift
+/// > #environment(ModelProvider.self)
+/// > ```
+///
 /// ## Macro Expansion
 /// The `ModelProvider` declared above will be expanded to
 ///
@@ -211,6 +217,12 @@ public macro dataProviding() = #externalMacro(module: "MacrosDefinitions", type:
 /// @Enviroment(ModelProvider.self) private var modelProvider
 /// ```
 ///
+/// > Tip:
+/// > You could also use the ``environment(_:)-9r4s2`` macro.
+/// > ```swift
+/// > #environment(ModelProvider.self)
+/// > ```
+///
 /// The providers can be declared using the ``dataProviding()`` macro.
 /// ```swift
 /// @dataProviding
@@ -230,3 +242,34 @@ public macro dataProviding() = #externalMacro(module: "MacrosDefinitions", type:
 /// - bug: Will fail to compile if the user defines its own `applicationDelegate`.
 @attached(member, names: named(ApplicationDelegate), arbitrary)
 public macro provided(by providers: [any DataProvider.Type]) = #externalMacro(module: "MacrosDefinitions", type: "providedBy")
+
+
+#if canImport(SwiftUI)
+import SwiftUI
+
+/// *syntax sugar* for defining swiftUI `@Environment`.
+///
+/// > Example:
+/// > ```swift
+/// > #environment(\.dismiss)
+/// > ```
+/// > would translate to
+/// > ```swift
+/// > @Environment(\.dismiss) private var dismiss
+/// > ```
+@freestanding(declaration, names: arbitrary)
+public macro environment<each Value>(_ contents: repeat KeyPath<EnvironmentValues, each Value>) = #externalMacro(module: "MacrosDefinitions", type: "environment")
+
+/// *syntax sugar* for defining swiftUI `@Environment`.
+///
+/// > Example:
+/// > ```swift
+/// > #environment(ModelProvider.self)
+/// > ```
+/// > would translate to
+/// > ```swift
+/// > @Environment(ModelProvider.self) private var modelProvider
+/// > ```
+@freestanding(declaration, names: arbitrary)
+public macro environment<each Value>(_ contents: repeat (each Value).Type) = #externalMacro(module: "MacrosDefinitions", type: "environment") where repeat each Value: AnyObject
+#endif

@@ -13,6 +13,7 @@ struct NucleusMacrosPlugin: CompilerPlugin {
         symbol.self,
         accessingAssociatedValues.self,
         dataProviding.self,
-        providedBy.self
+        providedBy.self,
+        environment.self
     ]
 }

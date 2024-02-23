@@ -4,20 +4,19 @@ import Foundation
 import SwiftUI
 
 
-@available(macOS 14.0, *)
-@available(iOS 17.0, *)
-@provided(by: [ModelProvider.self])
-struct testApp: App {
+@available(macOS 14.0, iOS 17, *)
+struct RequestTokenView: View {
     
-    var body: some Scene {
-        WindowGroup {
-            Text("")
-        }
+    #environment(\.dismiss)
+    #environment(ModelProvider.self)
+    
+    var body: some View {
+        EmptyView()
     }
 }
 
-@available(iOS 17.0, *)
-@available(macOS 14.0, *)
+
+@available(macOS 14.0, iOS 17, *)
 @dataProviding
 @Observable
 final class ModelProvider {

@@ -14,25 +14,29 @@ let testMacros: [String: Macro.Type] = [
     "symbol": symbol.self,
     "accessingAssociatedValues": accessingAssociatedValues.self,
     "dataProviding": dataProviding.self,
+    "environment": environment.self
 ]
 
 final class NucleusMacrosTests: XCTestCase {
     func testMacro() throws {
         assertMacroExpansion(
              """
-            @codable
-            struct App: App {
+            struct RequestTokenView: View {
             
-                @State private var model = Model()
-            
-                var body: some View {
-                    ContentView()
-                        .foregroudStyle(.black)
-                }
+                @Binding var phase: WelcomeView.Phase
+                
+                #environment(\\.dismiss)
+                #environment(ModelProvider.self)
             }
             """,
              expandedSource: """
+             struct RequestTokenView: View {
             
+                @Binding var phase: WelcomeView.Phase
+                
+                @Environment(\\.dismiss) private var dismiss
+                @Environment(ModelProvider.self) private var modelProvider
+            }
             """,
              macros: testMacros
         )
