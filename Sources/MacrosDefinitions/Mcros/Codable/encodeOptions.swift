@@ -1,5 +1,5 @@
 //
-//  transient.swift
+//  encodeOptions.swift
 //  NucleusMacros
 //
 //  Created by Vaida on 2023/12/16.
@@ -8,12 +8,9 @@
 import Foundation
 import SwiftSyntax
 import SwiftSyntaxMacros
-import SwiftSyntaxBuilder
-import SwiftDiagnostics
-import SwiftCompilerPluginMessageHandling
 
 
-public enum transient: PeerMacro {
+public enum encodeOptions: PeerMacro {
     
     public static func expansion(of node: SwiftSyntax.AttributeSyntax, 
                                  providingPeersOf declaration: some SwiftSyntax.DeclSyntaxProtocol,

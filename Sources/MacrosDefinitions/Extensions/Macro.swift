@@ -29,14 +29,14 @@ extension Macro {
                                           handler: (_ variable: PatternBindingListSyntax.Element, _ decl: VariableDeclSyntax, _ name: String) throws -> T?
     ) rethrows -> [T] {
         let lines: [[T]] = try declaration.memberBlock.members.map { member in
-            guard let variables = member.decl.as(VariableDeclSyntax.self), Bool.implies(ignoreComputedProperties, variables.isStoredInstanceProperty) else { return [] }
+            guard let variables = member.decl.as(VariableDeclSyntax.self), ignoreComputedProperties => variables.isStoredInstanceProperty else { return [] }
             
             // there may be multiple identifiers associated with the same member declaration, ie, `let a, b = 1`
             return try variables.bindings.compactMap { variable -> T? in
                 guard let name = variable.pattern.as(IdentifierPatternSyntax.self)?.identifier.text else { return nil }
                 
                 // if constant property with default value, ignore.
-                if Bool.implies(ignoreConstantProperties, variables.bindingSpecifier.tokenKind == .keyword(.let) && variable.initializer != nil) { return nil }
+                if ignoreConstantProperties => (variables.bindingSpecifier.tokenKind == .keyword(.let) && variable.initializer != nil) { return nil }
                 
                 return try handler(variable, variables, name)
             }
@@ -128,8 +128,11 @@ extension Macro {
 
 fileprivate extension Bool {
     
-    static func implies(_ lhs: Bool, _ rhs: Bool) -> Bool {
+    static func => (_ lhs: Bool, _ rhs: Bool) -> Bool {
         !lhs || rhs
     }
     
 }
+
+
+infix operator =>

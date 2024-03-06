@@ -21,12 +21,12 @@ final class NucleusMacrosTests: XCTestCase {
     func testMacro() throws {
         assertMacroExpansion(
              """
-            struct RequestTokenView: View {
+            @codable
+            struct Model {
             
-                @Binding var phase: WelcomeView.Phase
-                
-                #environment(\\.dismiss)
-                #environment(ModelProvider.self)
+            @encodeOptions(.ignored, .encodeIfNoneDefault, .encodeIfPresent)
+            var property: Int
+            
             }
             """,
              expandedSource: """

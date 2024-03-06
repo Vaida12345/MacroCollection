@@ -4,21 +4,15 @@ import Foundation
 import SwiftUI
 
 
-@available(macOS 14.0, iOS 17, *)
-struct RequestTokenView: View {
+@codable
+struct Model {
     
-    #environment(\.dismiss)
-    #environment(ModelProvider.self)
+    @encodeOptions(.encodeIfNoneDefault, .encodeIfPresent)
+    var property1: Int? = 2
     
-    var body: some View {
-        EmptyView()
-    }
-}
-
-
-@available(macOS 14.0, iOS 17, *)
-@dataProviding
-@Observable
-final class ModelProvider {
+    var property2: Int? = 2
+    
+    @encodeOptions(.encodeIfNoneDefault)
+    var property3: Int = 2
     
 }

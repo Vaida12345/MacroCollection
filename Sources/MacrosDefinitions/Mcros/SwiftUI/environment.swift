@@ -36,7 +36,7 @@ public enum environment: DeclarationMacro {
 }
 
 
-private extension String {
+internal extension String {
     func frontToLower() -> String {
         guard !self.isEmpty else { return "" }
         return self.replacingCharacters(in: self.startIndex..<self.index(after: self.startIndex), with: self.first!.lowercased())

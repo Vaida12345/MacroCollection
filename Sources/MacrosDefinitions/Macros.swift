@@ -14,6 +14,7 @@ struct NucleusMacrosPlugin: CompilerPlugin {
         accessingAssociatedValues.self,
         dataProviding.self,
         providedBy.self,
-        environment.self
+        environment.self,
+        encodeOptions.self,
     ]
 }

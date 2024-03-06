@@ -2,16 +2,8 @@ import SwiftSyntaxMacros
 import SwiftSyntax
 
 let syntax: DeclSyntax = """
-@provided(by: [Model.self])
-struct App: App {
-
-    @NSApplicationDelegateAdaptor(ApplicationDelegate.self) private var applicationDelegate
-
-    var body: some View {
-        ContentView()
-            .foregroudStyle(.black)
-    }
-}
+@encodeOptions(.ignored, .encodeIfNoneDefault, .encodeIfPresent)
+var property: Int = call()
 """
 
 dump(syntax)

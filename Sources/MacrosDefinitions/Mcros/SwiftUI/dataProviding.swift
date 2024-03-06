@@ -72,10 +72,10 @@ public enum dataProviding: MemberMacro, ExtensionMacro {
         let decodableDecl = try codable.generateDecode(of: node, providingMembersOf: declaration, in: context)
         let memberwiseInitializers = try memberwiseInitializable.expansion(of: node, providingMembersOf: declaration, in: context)
         let instanceDecl: DeclSyntax = """
-        /// The main ``\(declaration.name.with(\.trailingTrivia, []))`` to work with.
+        /// The main ``\(declaration.name.trimmed)`` to work with.
         ///
         /// This structure can be accessed across the app, and any mutations are observed in all views.
-        static var instance: \(declaration.name.with(\.trailingTrivia, [])) = {
+        static var instance: \(declaration.name.trimmed) = {
             do {
                 let decoder = PropertyListDecoder()
                 let data = try Data(contentsOf: \(declaration.name.trimmed).storageLocation)
@@ -110,10 +110,25 @@ public enum dataProviding: MemberMacro, ExtensionMacro {
             extensionTypes = ""
         }
         
-        return try [ExtensionDeclSyntax("extension \(type)\(raw: extensionTypes)") {
-            if let line = try codable.generateEncode(of: node, providingMembersOf: declaration, in: context) { line }
-            if let line = try codable.generateCodingKeys(of: node, providingMembersOf: declaration, in: context) { line }
-        }]
+        return try [
+            ExtensionDeclSyntax("extension \(type)\(raw: extensionTypes)") {
+                if let line = try codable.generateEncode(of: node, providingMembersOf: declaration, in: context) { line }
+                if let line = try codable.generateCodingKeys(of: node, providingMembersOf: declaration, in: context) { line }
+            },
+//            ExtensionDeclSyntax("extension EnvironmentValues") {
+//                """
+//                /// The ``\(type.trimmed)/instance`` of ``\(type.trimmed)`` stored in the environment.
+//                var \(raw: type.trimmed.description.frontToLower()): \(type.trimmed) {
+//                    get { self[\(type.trimmed)Key.self] }
+//                    set { self[\(type.trimmed)Key.self] = newValue }
+//                }
+//                
+//                private struct \(type.trimmed)Key: EnvironmentKey {
+//                    static var defaultValue: \(type.trimmed) = .instance
+//                }
+//                """
+//            }
+        ]
     }
     
     static func assertAllMembersHaveDefaultValue(declaration: some SwiftSyntax.DeclGroupSyntax) throws {

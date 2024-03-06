@@ -53,31 +53,11 @@ import Foundation
 ///
 /// ### Controlling Encode
 /// - ``transient()``
-@attached(extension, conformances: Codable, names: named(encode(to:)), named(CodingKeys))
-@attached(member, names: named(init(from:)))
+/// - ``encodeOptions(_:)``
+@attached(extension, conformances: Codable, names: named(encode(to:)), named(CodingKeys), named(init))
+@attached(member, names: named(init))
 public macro codable() = #externalMacro(module: "MacrosDefinitions", type: "codable")
 
-/// Generates an initializer including all the stored properties. if it is possible, an `init()` will also be synthesized.
-///
-/// Apply this macro to a class to generate memberwise initializers.
-/// ```swift
-/// @memberwiseInitializable
-/// class Cat {
-///     let name: String = "cat"
-///     let age: Int
-/// }
-/// ```
-///
-/// Any non-assignable values are ignored.
-/// ```swift
-/// init(age: Int) {
-///     self.age = age
-/// }
-/// ```
-///
-/// Sometimes, type cannot be interfered, such as the ones assigned by calling functions. In this case, an error will be emitted asking to declare type explicitly.
-@attached(member, names: named(init))
-public macro memberwiseInitializable() = #externalMacro(module: "MacrosDefinitions", type: "memberwiseInitializable")
 
 /// Tells `@codable` macro not to persist the annotated property.
 ///
@@ -103,6 +83,55 @@ public macro memberwiseInitializable() = #externalMacro(module: "MacrosDefinitio
 @attached(peer)
 public macro transient() = #externalMacro(module: "MacrosDefinitions", type: "transient")
 
+
+/// Tells `@codable` macro the additional options for coding.
+///
+/// This macro must be used within the ``codable()`` annotated class.
+/// ```swift
+/// @codable
+/// class Cat {
+///     let name: String
+///
+///     @encodeOptions(.ignored)
+///     let age: Int
+/// }
+/// ```
+///
+/// In the generated `CodingKeys`, the ignored property `age` is not shown.
+/// ```swift
+/// enum CodingKeys: CodingKey {
+///     case name
+/// }
+/// ```
+///
+/// The other generated codes are updated according.
+@attached(peer)
+public macro encodeOptions(_ options: AttributeEncodeOptions...) = #externalMacro(module: "MacrosDefinitions", type: "encodeOptions")
+
+
+/// Generates an initializer including all the stored properties. if it is possible, an `init()` will also be synthesized.
+///
+/// Apply this macro to a class to generate memberwise initializers.
+/// ```swift
+/// @memberwiseInitializable
+/// class Cat {
+///     let name: String = "cat"
+///     let age: Int
+/// }
+/// ```
+///
+/// Any non-assignable values are ignored.
+/// ```swift
+/// init(age: Int) {
+///     self.age = age
+/// }
+/// ```
+///
+/// Sometimes, type cannot be interfered, such as the ones assigned by calling functions. In this case, an error will be emitted asking to declare type explicitly.
+@attached(member, names: named(init))
+public macro memberwiseInitializable() = #externalMacro(module: "MacrosDefinitions", type: "memberwiseInitializable")
+
+
 /// Creates an url with compile-time validation
 ///
 /// This macro would produce compile errors if an url cannot be produced using give string.
@@ -113,6 +142,7 @@ public macro transient() = #externalMacro(module: "MacrosDefinitions", type: "tr
 @freestanding(expression)
 public macro url(_ string: StaticString) -> URL = #externalMacro(module: "MacrosDefinitions", type: "url")
 
+
 /// Creates a system-defined symbol with compile-time validation.
 ///
 /// This macro would produce compile errors if the symbol is not defined.
@@ -122,6 +152,7 @@ public macro url(_ string: StaticString) -> URL = #externalMacro(module: "Macros
 /// ```
 @freestanding(expression)
 public macro symbol(_ name: StaticString) -> String = #externalMacro(module: "MacrosDefinitions", type: "symbol")
+
 
 /// Generates methods for retrieving associated values and determining cases.
 ///
@@ -211,6 +242,7 @@ public macro accessingAssociatedValues() = #externalMacro(module: "MacrosDefinit
 @attached(member, names: named(init(from:)), named(init), named(instance))
 public macro dataProviding() = #externalMacro(module: "MacrosDefinitions", type: "dataProviding")
 
+
 /// Attach this macro to the `@main App` to use the `DataProvider`s declared.
 ///
 /// Attach the ``provided(by:)`` macro.
@@ -275,6 +307,7 @@ import SwiftUI
 /// > ```
 @freestanding(declaration, names: arbitrary)
 public macro environment<each Value>(_ contents: repeat KeyPath<EnvironmentValues, each Value>) = #externalMacro(module: "MacrosDefinitions", type: "environment")
+
 
 /// *syntax sugar* for defining swiftUI `@Environment`.
 ///
