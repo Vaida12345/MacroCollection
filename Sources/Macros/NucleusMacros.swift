@@ -61,8 +61,8 @@ import Foundation
 /// ### Controlling Encode
 /// - ``transient()``
 /// - ``encodeOptions(_:)``
-@attached(extension, conformances: Codable, names: named(encode(to:)), named(CodingKeys), named(init))
-@attached(member, names: named(init(from:)))
+@attached(extension, conformances: Codable, names: named(encode(to:)), named(CodingKeys))
+@attached(member, names: named(init))
 public macro customCodable() = #externalMacro(module: "MacrosDefinitions", type: "customCodable")
 
 
@@ -115,7 +115,7 @@ public macro customCodable() = #externalMacro(module: "MacrosDefinitions", type:
 ///
 /// ### More Customizations
 /// - ``customCodable()``
-@attached(extension, conformances: Codable, names: named(encode(to:)), named(CodingKeys), named(init))
+@attached(extension, conformances: Codable, names: named(encode(to:)), named(CodingKeys))
 @attached(member, names: named(init))
 public macro codable() = #externalMacro(module: "MacrosDefinitions", type: "codable")
 
@@ -303,7 +303,7 @@ public macro accessingAssociatedValues() = #externalMacro(module: "MacrosDefinit
 /// ### Protocols
 ///
 /// - ``DataProvider``
-@attached(extension, conformances: DataProvider, names: named(encode(to:)), named(CodingKeys), named(storageItem), named(save()))
+@attached(extension, conformances: DataProvider, Codable, names: named(encode(to:)), named(CodingKeys), named(storageItem), named(save()))
 @attached(member, names: named(init(from:)), named(init), named(instance))
 public macro dataProviding() = #externalMacro(module: "MacrosDefinitions", type: "dataProviding")
 

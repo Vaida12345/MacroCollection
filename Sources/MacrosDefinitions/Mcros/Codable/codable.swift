@@ -21,10 +21,12 @@ public enum codable: ExtensionMacro, MemberMacro {
     ) throws -> [SwiftSyntax.DeclSyntax] {
         guard declaration.is(StructDeclSyntax.self) || declaration.is(ClassDeclSyntax.self) else { return [] } // let the other expand handle the throwing.
         
+        let memberwiseInitializer = try memberwiseInitializable.expansion(of: node, providingMembersOf: declaration, in: context)
+        
         return if let line = try generateDecode(of: node, providingMembersOf: declaration, in: context) {
-            [line.cast(DeclSyntax.self)]
+            [line.cast(DeclSyntax.self)] + memberwiseInitializer
         } else {
-            []
+            memberwiseInitializer
         }
     }
     
@@ -35,25 +37,22 @@ public enum codable: ExtensionMacro, MemberMacro {
                                  conformingTo protocols: [SwiftSyntax.TypeSyntax],
                                  in context: some SwiftSyntaxMacros.MacroExpansionContext
     ) throws -> [SwiftSyntax.ExtensionDeclSyntax] {
-        guard declaration.is(StructDeclSyntax.self) ||
-                declaration.is(ClassDeclSyntax.self) else { throw shouldRemoveMacroError(for: declaration,
-                                                                                         macroName: "@codable",
-                                                                                         message: "@codable should only be applied to `struct` or `class`") }
+        guard declaration.is(StructDeclSyntax.self) || declaration.is(ClassDeclSyntax.self) else {
+            throw shouldRemoveMacroError(for: declaration, macroName: "@codable", message: "@codable should only be applied to `struct` or `class`")
+        }
+        
+        guard !declaration.attributes.contains(where: { $0.as(AttributeSyntax.self)?.attributeName.as(IdentifierTypeSyntax.self) == "customCodable" }) else {
+            throw shouldRemoveMacroError(for: declaration, macroName: "@codable", message: "@codable is obsolete when used with `customCodable`")
+        }
         
         var shouldDeclareInheritance = true
         if let inheritedTypes = declaration.inheritanceClause?.inheritedTypes {
             shouldDeclareInheritance = !inheritedTypes.contains(where: { $0.type.as(IdentifierTypeSyntax.self)?.name.text == "Codable" })
         }
         
-        let memberwiseInitializer = try memberwiseInitializable.expansion(of: node, providingMembersOf: declaration, in: context)
-        
         return try [ExtensionDeclSyntax("extension \(type)\(raw: shouldDeclareInheritance ? ": Codable" : "")") {
             if let line = try generateCodingKeys(of: node, providingMembersOf: declaration, in: context) { .init(leadingTrivia: .newlines(2), decl: line, trailingTrivia: .newlines(2)) }
             if let line = try generateEncode(of: node, providingMembersOf: declaration, in: context) { .init(decl: line) }
-            
-            for decl in memberwiseInitializer {
-                decl
-            }
         }]
     }
     

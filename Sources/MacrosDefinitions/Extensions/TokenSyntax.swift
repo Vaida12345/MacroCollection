@@ -12,17 +12,13 @@ import SwiftSyntax
 
 extension TokenSyntax {
     
-    static func == (_ lhs: TokenSyntax, _ rhs: String) -> Bool {
-        lhs.text == rhs
-    }
-    
+    static func == (_ lhs: TokenSyntax, _ rhs: String) -> Bool { lhs.text == rhs }
+
 }
 
 
 extension Optional<TokenSyntax> {
     
-    static func == (_ lhs: TokenSyntax?, _ rhs: String) -> Bool {
-        lhs?.text == rhs
-    }
+    static func == (_ lhs: TokenSyntax?, _ rhs: String) -> Bool { lhs?.text == rhs }
     
 }

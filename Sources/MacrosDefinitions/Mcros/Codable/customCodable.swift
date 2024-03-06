@@ -29,7 +29,13 @@ public enum customCodable: ExtensionMacro, MemberMacro {
         })?.decl.as(InitializerDeclSyntax.self)?.body?.statements
         guard let customDecode else { return [] } // the other expansion will handle the throwing.
         
-        return try [generateDecode(of: node, providingMembersOf: declaration, in: context, customDecode: customDecode).cast(DeclSyntax.self)]
+        let memberwiseInitializer: [DeclSyntax] = if !declaration.attributes.contains(where: { $0.as(AttributeSyntax.self)?.attributeName.as(IdentifierTypeSyntax.self) == "dataProviding" }) {
+            try memberwiseInitializable.expansion(of: node, providingMembersOf: declaration, in: context)
+        } else {
+            []
+        }
+        
+        return try [generateDecode(of: node, providingMembersOf: declaration, in: context, customDecode: customDecode).cast(DeclSyntax.self)] + memberwiseInitializer
     }
     
     
@@ -102,15 +108,9 @@ public enum customCodable: ExtensionMacro, MemberMacro {
             shouldDeclareInheritance = !inheritedTypes.contains(where: { $0.type.as(IdentifierTypeSyntax.self)?.name.text == "Codable" })
         }
         
-        let memberwiseInitializer = try memberwiseInitializable.expansion(of: node, providingMembersOf: declaration, in: context)
-        
         return try [ExtensionDeclSyntax("extension \(type)\(raw: shouldDeclareInheritance ? ": Codable" : "")") {
             if let line = try codable.generateCodingKeys(of: node, providingMembersOf: declaration, in: context) { .init(leadingTrivia: .newlines(2), decl: line, trailingTrivia: .newlines(2)) }
             if let line = try generateEncode(of: node, providingMembersOf: declaration, in: context, customEncode: customEncode!) { .init(decl: line) }
-            
-            for decl in memberwiseInitializer {
-                decl
-            }
         }]
     }
     

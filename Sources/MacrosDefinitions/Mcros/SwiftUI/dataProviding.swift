@@ -69,7 +69,11 @@ public enum dataProviding: MemberMacro, ExtensionMacro {
         try assertAllMembersHaveDefaultValue(declaration: declaration)
         
         // decl
-        let decodableDecl = try codable.generateDecode(of: node, providingMembersOf: declaration, in: context)
+        let decodableDecl: InitializerDeclSyntax? = if declaration.attributes.contains(where: { $0.as(AttributeSyntax.self)?.attributeName.as(IdentifierTypeSyntax.self) == "customCodable" }) {
+            nil
+        } else {
+            try codable.generateDecode(of: node, providingMembersOf: declaration, in: context)
+        }
         let memberwiseInitializers = try memberwiseInitializable.expansion(of: node, providingMembersOf: declaration, in: context)
         let instanceDecl: DeclSyntax = """
         /// The main ``\(declaration.name.trimmed)`` to work with.
@@ -99,21 +103,34 @@ public enum dataProviding: MemberMacro, ExtensionMacro {
                                                                                                          macroName: "@dataProviding",
                                                                                                          message: "@dataProviding should only be applied to `class`") }
         var shouldDeclareDataProviderInheritance = true
+        var shouldDeclareCodableInheritance = true
         if let inheritedTypes = declaration.inheritanceClause?.inheritedTypes {
             shouldDeclareDataProviderInheritance = !inheritedTypes.contains(where: { $0.type.as(IdentifierTypeSyntax.self)?.name.text == "DataProvider" })
+            shouldDeclareCodableInheritance = !inheritedTypes.contains(where: { $0.type.as(IdentifierTypeSyntax.self)?.name.text == "Codable" })
+        }
+        if shouldDeclareCodableInheritance {
+            if declaration.attributes.contains(where: { $0.as(AttributeSyntax.self)?.attributeName.as(IdentifierTypeSyntax.self) == "customCodable" }) {
+                shouldDeclareCodableInheritance = false
+            }
         }
         
         let extensionTypes: String
-        if shouldDeclareDataProviderInheritance {
+        if shouldDeclareDataProviderInheritance && shouldDeclareCodableInheritance {
+            extensionTypes = ": DataProvider, Codable"
+        } else if shouldDeclareDataProviderInheritance {
             extensionTypes = ": DataProvider"
+        } else if shouldDeclareCodableInheritance {
+            extensionTypes = ": Codable"
         } else {
             extensionTypes = ""
         }
         
+        let isCustomCodable = declaration.attributes.contains(where: { $0.as(AttributeSyntax.self)?.attributeName.as(IdentifierTypeSyntax.self) == "customCodable" })
+        
         return try [
             ExtensionDeclSyntax("extension \(type)\(raw: extensionTypes)") {
-                if let line = try codable.generateEncode(of: node, providingMembersOf: declaration, in: context) { line }
-                if let line = try codable.generateCodingKeys(of: node, providingMembersOf: declaration, in: context) { line }
+                if !isCustomCodable, let line = try codable.generateEncode(of: node, providingMembersOf: declaration, in: context) { line }
+                if !isCustomCodable, let line = try codable.generateCodingKeys(of: node, providingMembersOf: declaration, in: context) { line }
             },
 //            ExtensionDeclSyntax("extension EnvironmentValues") {
 //                """

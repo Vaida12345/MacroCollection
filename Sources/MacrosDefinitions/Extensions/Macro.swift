@@ -108,8 +108,8 @@ extension Macro {
             return DiagnosticsError(diagnostics: [
                 Diagnostic(node: declaration.attributes,
                            message: .diagnostic(message: message,
-                                                diagnosticID: "\(Self.self).shouldRemoveMacroError.\(macroName)"
-                                               ),
+                                                diagnosticID: "\(Self.self).shouldRemoveMacroError.\(macroName)"),
+                           highlights: [Syntax(declaration.attributes[declarationIndex])],
                            fixIt: .replace(message: .fixing(message: "Remove `\(macroName)`", diagnosticID: "\(Self.self).shouldRemoveMacroError.\(macroName)"),
                                            oldNode: declaration.attributes,
                                            newNode: replacement))
