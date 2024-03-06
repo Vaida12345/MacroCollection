@@ -32,10 +32,13 @@ public enum providedBy: MemberMacro {
         
 //        let functionName = "attachDataProviderEnvironment"
         guard let attribute = declaration.attributes.first(where: { $0.as(AttributeSyntax.self)?.attributeName.as(IdentifierTypeSyntax.self)?.name.text == "provided" }),
-              let argument = attribute.as(AttributeSyntax.self)?.arguments?.as(LabeledExprListSyntax.self)?.first(where: { $0.label?.text == "by" }),
-              let providers = argument.expression.as(ArrayExprSyntax.self)?.elements.compactMap({ $0.expression.as(MemberAccessExprSyntax.self)?.base?.as(DeclReferenceExprSyntax.self)?.baseName }),
-              !providers.isEmpty
+              let arguments = attribute.as(AttributeSyntax.self)?.arguments?.as(LabeledExprListSyntax.self),
+              arguments.first?.label == "by"
         else { return [] }
+        
+        let providers = arguments.compactMap { argument in
+            argument.expression.as(MemberAccessExprSyntax.self)?.base?.as(DeclReferenceExprSyntax.self)?.baseName
+        }
         
         let providersDecl = providers.map { provider in
             var name = provider.text

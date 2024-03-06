@@ -40,3 +40,17 @@ final class Model {
     }
     
 }
+
+
+@available(macOS 14.0, *)
+@provided(by: Model.self)
+struct MainApp: App {
+    
+    var body: some Scene {
+        WindowGroup {
+            
+        }
+    }
+    
+    
+}

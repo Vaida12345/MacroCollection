@@ -257,7 +257,7 @@ public macro accessingAssociatedValues() = #externalMacro(module: "MacrosDefinit
 ///
 /// Then, in your `@main App`, attach the ``provided(by:)`` macro.
 /// ```swift
-/// @provided(by: [ModelProvider.self])
+/// @provided(by: ModelProvider.self)
 /// struct testApp: App { ... }
 /// ```
 ///
@@ -313,7 +313,7 @@ public macro dataProviding() = #externalMacro(module: "MacrosDefinitions", type:
 /// Attach the ``provided(by:)`` macro.
 /// ```swift
 /// @main
-/// @provided(by: [ModelProvider.self])
+/// @provided(by: ModelProvider.self)
 /// struct testApp: App { ... }
 /// ```
 ///
@@ -354,7 +354,7 @@ public macro dataProviding() = #externalMacro(module: "MacrosDefinitions", type:
 ///
 /// - bug: Will fail to compile if the user defines its own `applicationDelegate`.
 @attached(member, names: named(ApplicationDelegate), arbitrary)
-public macro provided(by providers: [any DataProvider.Type]) = #externalMacro(module: "MacrosDefinitions", type: "providedBy")
+public macro provided<each Value>(by providers: repeat (each Value).Type) = #externalMacro(module: "MacrosDefinitions", type: "providedBy") where repeat each Value: DataProvider
 
 
 #if canImport(SwiftUI)
@@ -385,5 +385,5 @@ public macro environment<each Value>(_ contents: repeat KeyPath<EnvironmentValue
 /// > @Environment(ModelProvider.self) private var modelProvider
 /// > ```
 @freestanding(declaration, names: arbitrary)
-public macro environment<each Value>(_ contents: repeat (each Value).Type) = #externalMacro(module: "MacrosDefinitions", type: "environment") where repeat each Value: AnyObject
+public macro environment<each Value>(_ contents: repeat (each Value).Type) = #externalMacro(module: "MacrosDefinitions", type: "environment") where repeat each Value: DataProvider
 #endif

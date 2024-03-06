@@ -2,8 +2,7 @@ import SwiftSyntaxMacros
 import SwiftSyntax
 
 let syntax: DeclSyntax = """
-@customCodable
-@codable
+@provided(by: Model.self, Model2.self)
 struct Model {
 }
 """
