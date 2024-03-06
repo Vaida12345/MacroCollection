@@ -45,10 +45,14 @@ public enum customCodable: ExtensionMacro, MemberMacro {
                                  conformingTo protocols: [SwiftSyntax.TypeSyntax],
                                  in context: some SwiftSyntaxMacros.MacroExpansionContext
     ) throws -> [SwiftSyntax.ExtensionDeclSyntax] {
-        guard declaration.is(StructDeclSyntax.self) ||
-                declaration.is(ClassDeclSyntax.self) else { throw shouldRemoveMacroError(for: declaration,
-                                                                                         macroName: "@customCodable",
-                                                                                         message: "@customCodable should only be applied to `struct` or `class`") }
+        let declarationName: TokenSyntax
+        if let declaration = declaration.as(StructDeclSyntax.self) {
+            declarationName = declaration.name
+        } else if let declaration = declaration.as(ClassDeclSyntax.self) {
+            declarationName = declaration.name
+        } else {
+            throw shouldRemoveMacroError(for: declaration, macroName: "@customCodable", message: "@customCodable should only be applied to `struct` or `class`")
+        }
         
         // MARK: - Ensures conforms to protocol requirements.
         let customEncode = declaration.memberBlock.members.first(where: {
@@ -69,7 +73,7 @@ public enum customCodable: ExtensionMacro, MemberMacro {
         })
         
         guard customEncode != nil && customDecode != nil else {
-            throw DiagnosticsError(node: declaration, title: "Type '\(node.trimmed)' does not conform to protocol 'CustomCodable'",
+            throw DiagnosticsError("Type '\(declarationName)' does not conform to protocol 'CustomCodable'", highlighting: node,
                                    replacing: declaration.memberBlock, message: "Do you want to add protocol stubs?") { replacement in
                 if customEncode == nil {
                     replacement.members.append(MemberBlockItemSyntax(leadingTrivia: .newlines(2),

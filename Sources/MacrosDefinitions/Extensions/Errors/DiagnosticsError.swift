@@ -11,7 +11,7 @@ import SwiftSyntax
 
 extension DiagnosticsError {
     
-    init<Node>(node: some SyntaxProtocol, title: String, replacing oldNode: Node, message: String, with handler: (_ replacement: inout Node) -> Void) where Node: SyntaxProtocol {
+    init<Node>(_ title: String, highlighting node: some SyntaxProtocol, replacing oldNode: Node, message: String, with handler: (_ replacement: inout Node) -> Void) where Node: SyntaxProtocol {
         let id = UUID().description
         
         var copy = oldNode

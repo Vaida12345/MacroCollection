@@ -22,14 +22,11 @@ final class NucleusMacrosTests: XCTestCase {
     func testMacro() throws {
         assertMacroExpansion(
              """
-            @codable
             @customCodable
-            struct Cat {
+            @codable
+            final class Model {
             
-            @encodeOptions(.encodeIfNoneDefault)
-            var age: Int = 0
             }
-
             """,
              expandedSource: """
             """,

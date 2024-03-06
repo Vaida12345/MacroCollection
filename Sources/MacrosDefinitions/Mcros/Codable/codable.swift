@@ -20,6 +20,7 @@ public enum codable: ExtensionMacro, MemberMacro {
                                  in context: some SwiftSyntaxMacros.MacroExpansionContext
     ) throws -> [SwiftSyntax.DeclSyntax] {
         guard declaration.is(StructDeclSyntax.self) || declaration.is(ClassDeclSyntax.self) else { return [] } // let the other expand handle the throwing.
+        guard !declaration.attributes.contains(where: { $0.as(AttributeSyntax.self)?.attributeName.as(IdentifierTypeSyntax.self) == "customCodable" }) else { return [] }
         
         let memberwiseInitializer = try memberwiseInitializable.expansion(of: node, providingMembersOf: declaration, in: context)
         
@@ -213,14 +214,14 @@ public enum codable: ExtensionMacro, MemberMacro {
             
             if isIgnored {
                 guard variable.initializer == nil else { return nil }
-                throw DiagnosticsError(node: variable, title: "A default value must be provided for transient values.",
+                throw DiagnosticsError("A default value must be provided for transient values.", highlighting: variable,
                                        replacing: variable, message: "Provide a default value") { replacement in
                     replacement.initializer = InitializerClauseSyntax(equal: .equalToken(leadingTrivia: .space, trailingTrivia: .space),
                                                                       value: EditorPlaceholderExprSyntax(placeholder: .identifier("<#default value#>")))
                 }
             } else if warnNonNilEncodeIfPresent {
                 if encodeOptionsArgsCount == 1 {
-                    throw DiagnosticsError(node: variable, title: "`encodeIfPresent` can only be applied to optional values.",
+                    throw DiagnosticsError("`encodeIfPresent` can only be applied to optional values.", highlighting: variable,
                                            replacing: decl.attributes, message: "Remove the `codeOptions` macro`") { replacement in
                         replacement = AttributeListSyntax(decl.attributes.drop { attribute in
                             guard let attribute = attribute.as(AttributeSyntax.self),
@@ -237,7 +238,7 @@ public enum codable: ExtensionMacro, MemberMacro {
                         })
                     }
                 } else {
-                    throw DiagnosticsError(node: variable, title: "`encodeIfPresent` can only be applied to optional values.",
+                    throw DiagnosticsError("`encodeIfPresent` can only be applied to optional values.", highlighting: variable,
                                            replacing: decl.attributes, message: "Remove the `encodeIfPresent` option") { replacement in
                         replacement = AttributeListSyntax(replacement.map { _attribute in
                             guard var attribute = _attribute.as(AttributeSyntax.self),
@@ -258,7 +259,7 @@ public enum codable: ExtensionMacro, MemberMacro {
                     }
                 }
             } else if additionalInfo.encodeIfNoneDefault && variable.initializer == nil {
-                throw DiagnosticsError(node: variable, title: "A default value must be provided for `encodeIfNoneDefault` option..",
+                throw DiagnosticsError("A default value must be provided for `encodeIfNoneDefault` option.", highlighting: variable,
                                        replacing: variable, message: "Provide a default value") { replacement in
                     replacement.initializer = InitializerClauseSyntax(equal: .equalToken(leadingTrivia: .space, trailingTrivia: .space),
                                                                       value: EditorPlaceholderExprSyntax(placeholder: .identifier("<#default value#>")))

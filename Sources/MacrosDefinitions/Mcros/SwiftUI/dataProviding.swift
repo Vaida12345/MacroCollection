@@ -35,7 +35,7 @@ public enum dataProviding: MemberMacro, ExtensionMacro {
             let id =  "\(Self.self).dataProviding.requiresObservable"
             
             throw DiagnosticsError(diagnostics: [
-                Diagnostic(node: declaration.attributes,
+                Diagnostic(node: node,
                            message: .diagnostic(message: "DataProvider should be declared `Observable` or `ObservableObject`",
                                                 diagnosticID: id),
                            fixIts: [
@@ -56,7 +56,7 @@ public enum dataProviding: MemberMacro, ExtensionMacro {
             let id =  "\(Self.self).dataProviding.requiresFinal"
             
             throw DiagnosticsError(diagnostics: [
-                Diagnostic(node: declaration.attributes,
+                Diagnostic(node: node,
                            message: .diagnostic(message: "DataProvider should be declared `final`",
                                                 diagnosticID: id),
                            fixIt: .replace(message: .fixing(message: "declare `final`", diagnosticID: id), 

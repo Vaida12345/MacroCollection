@@ -79,7 +79,7 @@ extension Macro {
             replacementNote.bindings[replacementNote.bindings.index(before: replacementNote.bindings.endIndex)] = replacementBinding
             
             throw DiagnosticsError(diagnostics: [
-                Diagnostic(node: declaration,
+                Diagnostic(node: decl,
                            message: .diagnostic(message: "Type of `\(name)` cannot be inferred, please declare explicitly",
                                                 diagnosticID: "\(Self.self).cannotInferType.\(name)"),
                            highlights: [decl.cast(Syntax.self)],
@@ -106,7 +106,7 @@ extension Macro {
             replacement.remove(at: declarationIndex)
             
             return DiagnosticsError(diagnostics: [
-                Diagnostic(node: declaration.attributes,
+                Diagnostic(node: declaration.attributes[declarationIndex],
                            message: .diagnostic(message: message,
                                                 diagnosticID: "\(Self.self).shouldRemoveMacroError.\(macroName)"),
                            highlights: [Syntax(declaration.attributes[declarationIndex])],
