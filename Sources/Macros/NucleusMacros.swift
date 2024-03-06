@@ -275,7 +275,7 @@ public macro accessingAssociatedValues() = #externalMacro(module: "MacrosDefinit
 /// ```
 ///
 /// > Tip:
-/// > You could also use the ``environment(_:)-9r4s2`` macro.
+/// > You could also use the ``environment(_:)-41zew`` macro.
 /// > ```swift
 /// > #environment(ModelProvider.self)
 /// > ```
@@ -298,7 +298,7 @@ public macro accessingAssociatedValues() = #externalMacro(module: "MacrosDefinit
 /// ### Macros
 ///
 ///- ``provided(by:)``
-///- ``environment(_:)-9r4s2``
+///- ``environment(_:)-41zew``
 ///
 /// ### Protocols
 ///
@@ -331,7 +331,7 @@ public macro dataProviding() = #externalMacro(module: "MacrosDefinitions", type:
 /// ```
 ///
 /// > Tip:
-/// > You could also use the ``environment(_:)-9r4s2`` macro.
+/// > You could also use the ``environment(_:)-41zew`` macro.
 /// > ```swift
 /// > #environment(ModelProvider.self)
 /// > ```
