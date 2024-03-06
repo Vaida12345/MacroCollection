@@ -33,6 +33,7 @@ A set of macros aiming to extend the functionality of Swift
 
 - ``accessingAssociatedValues()``
 - ``codable()``
+- ``customCodable()``
 - ``memberwiseInitializable()``
 
 ### SwiftUI

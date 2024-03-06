@@ -53,10 +53,10 @@ public enum memberwiseInitializable: MemberMacro {
         if !declaration.memberBlock.members.contains(where: { member in
             guard let decl = member.decl.as(InitializerDeclSyntax.self) else { return false }
             let parametersSet = decl.signature.parameterClause.parameters.map {
-                $0.firstName.text + ($0.secondName?.text ?? "") + $0.type.as(IdentifierTypeSyntax.self)!.name.text
+                $0.firstName.text + ($0.secondName?.text ?? "") + ($0.type.as(IdentifierTypeSyntax.self)?.name.text ?? "")
             }
             return Set(parametersSet) == Set(parameters.map {
-                $0.firstName.text + ($0.secondName?.text ?? "") + $0.type.as(IdentifierTypeSyntax.self)!.name.text
+                $0.firstName.text + ($0.secondName?.text ?? "") + ($0.type.as(IdentifierTypeSyntax.self)?.name.text ?? "")
             })
         }) {
             result.append(memberwiseInitializer)

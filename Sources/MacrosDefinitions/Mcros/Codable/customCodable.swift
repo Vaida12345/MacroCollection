@@ -1,0 +1,206 @@
+//
+//  customCodable.swift
+//
+//
+//  Created by Vaida on 2024/3/6.
+//
+
+import Foundation
+import SwiftSyntax
+import SwiftSyntaxMacros
+import SwiftSyntaxBuilder
+import SwiftDiagnostics
+
+
+public enum customCodable: ExtensionMacro, MemberMacro {
+    
+    public static func expansion(of node: SwiftSyntax.AttributeSyntax,
+                                 providingMembersOf declaration: some SwiftSyntax.DeclGroupSyntax,
+                                 in context: some SwiftSyntaxMacros.MacroExpansionContext
+    ) throws -> [SwiftSyntax.DeclSyntax] {
+        guard declaration.is(StructDeclSyntax.self) || declaration.is(ClassDeclSyntax.self) else { return [] } // the other expansion will handle the throwing.
+        
+        let customDecode = declaration.memberBlock.members.first(where: {
+            guard let decl = $0.decl.as(InitializerDeclSyntax.self) else { return false }
+            let parameters = decl.signature.parameterClause.parameters
+            guard parameters.count == 1,
+                  let parameter = parameters.first else { return false }
+            return parameter.firstName == "_from" && parameter.secondName == "container" && parameter.type.description == "inout KeyedDecodingContainer<CodingKeys>"
+        })?.decl.as(InitializerDeclSyntax.self)?.body?.statements
+        guard let customDecode else { return [] } // the other expansion will handle the throwing.
+        
+        return try [generateDecode(of: node, providingMembersOf: declaration, in: context, customDecode: customDecode).cast(DeclSyntax.self)]
+    }
+    
+    
+    public static func expansion(of node: SwiftSyntax.AttributeSyntax,
+                                 attachedTo declaration: some SwiftSyntax.DeclGroupSyntax,
+                                 providingExtensionsOf type: some SwiftSyntax.TypeSyntaxProtocol,
+                                 conformingTo protocols: [SwiftSyntax.TypeSyntax],
+                                 in context: some SwiftSyntaxMacros.MacroExpansionContext
+    ) throws -> [SwiftSyntax.ExtensionDeclSyntax] {
+        guard declaration.is(StructDeclSyntax.self) ||
+                declaration.is(ClassDeclSyntax.self) else { throw shouldRemoveMacroError(for: declaration,
+                                                                                         macroName: "@customCodable",
+                                                                                         message: "@customCodable should only be applied to `struct` or `class`") }
+        
+        // MARK: - Ensures conforms to protocol requirements.
+        let customEncode = declaration.memberBlock.members.first(where: {
+            guard let decl = $0.decl.as(FunctionDeclSyntax.self),
+                  decl.name == "_encode" else { return false }
+            let parameters = decl.signature.parameterClause.parameters
+            guard parameters.count == 1,
+                  let parameter = parameters.first else { return false }
+            return parameter.firstName == "to" && parameter.secondName == "container" && parameter.type.description == "inout KeyedEncodingContainer<CodingKeys>"
+        })?.decl.as(FunctionDeclSyntax.self)?.body?.statements
+        
+        let customDecode = declaration.memberBlock.members.first(where: {
+            guard let decl = $0.decl.as(InitializerDeclSyntax.self) else { return false }
+            let parameters = decl.signature.parameterClause.parameters
+            guard parameters.count == 1,
+                  let parameter = parameters.first else { return false }
+            return parameter.firstName == "_from" && parameter.secondName == "container" && parameter.type.description == "inout KeyedDecodingContainer<CodingKeys>"
+        })
+        
+        guard customEncode != nil && customDecode != nil else {
+            throw DiagnosticsError(node: declaration, title: "Type '\(node.trimmed)' does not conform to protocol 'CustomCodable'",
+                                   replacing: declaration.memberBlock, message: "Do you want to add protocol stubs?") { replacement in
+                if customEncode == nil {
+                    replacement.members.append(MemberBlockItemSyntax(leadingTrivia: .newlines(2),
+                                                                     decl: """
+                        /// `CustomCodable` protocol requirement.
+                        ///
+                        /// Within this function, encode the properties that need *special care*. The properties not defined will be encoded according to its attributes, such as ``encodeOptions(:_)``.
+                        ///
+                        /// - Note: A key not present here does not mean not encoded.
+                         private func _encode(to container: inout KeyedEncodingContainer<CodingKeys>) throws { \n\n }
+                        """ as DeclSyntax))
+                }
+                if customDecode == nil {
+                    replacement.members.append(MemberBlockItemSyntax(leadingTrivia: .newlines(2),
+                                                                     decl: """
+                        /// `CustomCodable` protocol requirement.
+                        ///
+                        /// Within this function, decode the properties that need *special care*. The properties not defined will be decode according to its attributes, such as ``encodeOptions(:_)``.
+                        ///
+                        /// - Returns: Always return `nil` to enable partial initializations.
+                        ///
+                        /// - Note: A key not present here does not mean not being decoded.
+                        private init?(_from container: inout KeyedDecodingContainer<CodingKeys>) throws {
+                            
+                            return nil // Protocol requirement: enabling partial initialization
+                        }
+                        """ as DeclSyntax ))
+                }
+            }
+        }
+        
+        // MARK: -
+        
+        var shouldDeclareInheritance = true
+        if let inheritedTypes = declaration.inheritanceClause?.inheritedTypes {
+            shouldDeclareInheritance = !inheritedTypes.contains(where: { $0.type.as(IdentifierTypeSyntax.self)?.name.text == "Codable" })
+        }
+        
+        let memberwiseInitializer = try memberwiseInitializable.expansion(of: node, providingMembersOf: declaration, in: context)
+        
+        return try [ExtensionDeclSyntax("extension \(type)\(raw: shouldDeclareInheritance ? ": Codable" : "")") {
+            if let line = try codable.generateCodingKeys(of: node, providingMembersOf: declaration, in: context) { .init(leadingTrivia: .newlines(2), decl: line, trailingTrivia: .newlines(2)) }
+            if let line = try generateEncode(of: node, providingMembersOf: declaration, in: context, customEncode: customEncode!) { .init(decl: line) }
+            
+            for decl in memberwiseInitializer {
+                decl
+            }
+        }]
+    }
+    
+    
+    static func generateEncode(of node: SwiftSyntax.AttributeSyntax,
+                               providingMembersOf declaration: some SwiftSyntax.DeclGroupSyntax,
+                               in context: some SwiftSyntaxMacros.MacroExpansionContext,
+                               customEncode: CodeBlockItemListSyntax
+    ) throws -> FunctionDeclSyntax? {
+        let encodedProperties = customEncode.description.matches(of: try! Regex<(Substring, Substring)>(#"container\.encode.*\(.+, forKey: \.(\w+\d*)\)"#)).map { String($0.1) }
+        
+        let lines: [CodeBlockItemSyntax] = try codable.memberwiseMap(for: declaration) { variable, decl, name, additionalInfo in
+            guard !encodedProperties.contains(name) else { return nil }
+            
+            let syntax: CodeBlockItemSyntax
+            if additionalInfo.encodeIfNoneDefault, let defaultValue = additionalInfo.defaultValue {
+                syntax = """
+                if self.\(raw: name) != \(raw: defaultValue) {
+                    try container.encodeIfPresent(self.\(raw: name), forKey: .\(raw: name))
+                }
+                """
+            } else if try additionalInfo.encodeOptionalAsIfPresent && getType(for: variable, decl: decl, name: name, of: node).isOptional {
+                syntax = "try container.encodeIfPresent(self.\(raw: name), forKey: .\(raw: name))"
+            } else {
+                syntax = "try container.encode(self.\(raw: name), forKey: .\(raw: name))"
+            }
+            
+            return syntax
+        }
+        
+        return FunctionDeclSyntax(modifiers: declaration.modifiers.filter({ $0.name.tokenKind == .keyword(.public) || $0.name.tokenKind == .keyword(.open) }),
+                                  name: "encode",
+                                  signature: .init(parameterClause: .init(parameters: .init([.init(firstName: "to", secondName: "encoder", type: .identifier("Encoder"))])),
+                                                   effectSpecifiers: .init(throwsSpecifier: .keyword(.throws)))) {
+            "var container = encoder.container(keyedBy: CodingKeys.self)"
+            
+            for line in lines {
+                line
+            }
+            
+            for line in customEncode {
+                line.trimmed
+            }
+        }
+    }
+    
+    static func generateDecode(of node: SwiftSyntax.AttributeSyntax,
+                               providingMembersOf declaration: some SwiftSyntax.DeclGroupSyntax,
+                               in context: some SwiftSyntaxMacros.MacroExpansionContext,
+                               customDecode: CodeBlockItemListSyntax
+    ) throws -> InitializerDeclSyntax {
+        let decodedProperties = customDecode.description.matches(of: try! Regex<(Substring, Substring)>(#"container\.decode.*\(.*forKey: \.(\w+\d*)\)"#)).map { String($0.1) }
+        
+        let lines: [CodeBlockItemSyntax] = try codable.memberwiseMap(for: declaration) { variable, decl, name, additionalInfo in
+            guard !decodedProperties.contains(name) else { return nil }
+            
+            let syntax: CodeBlockItemSyntax
+            
+            if additionalInfo.encodeIfNoneDefault, let defaultValue = additionalInfo.defaultValue {
+                syntax = "self.\(raw: name) = try container.decodeIfPresent(forKey: .\(raw: name)) ?? \(raw: defaultValue)"
+            } else if try additionalInfo.encodeOptionalAsIfPresent && getType(for: variable, decl: decl, name: name, of: node).isOptional {
+                syntax = "self.\(raw: name) = try container.decodeIfPresent(forKey: .\(raw: name))"
+            } else {
+                syntax = "self.\(raw: name) = try container.decode(forKey: .\(raw: name))"
+            }
+            
+            return syntax
+        }
+        
+        var modifiers = declaration.modifiers.filter({ $0.name.tokenKind == .keyword(.public) || $0.name.tokenKind == .keyword(.open) })
+        if let decl = declaration.as(ClassDeclSyntax.self) {
+            if !decl.modifiers.contains(where: { $0.name == .keyword(.final) }) {
+                // if non final, must add `required`.
+                modifiers.append(.init(name: .keyword(.required)))
+            }
+        }
+        
+        return InitializerDeclSyntax(modifiers: modifiers,
+                                     signature: .init(parameterClause: .init(parameters: .init([.init(firstName: "from", secondName: "decoder", type: .identifier("Decoder"))])),
+                                                      effectSpecifiers: .init(throwsSpecifier: .keyword(.throws)))) {
+            "let container = try decoder.container(keyedBy: CodingKeys.self)"
+            
+            for line in lines {
+                line
+            }
+            
+            for line in customDecode.dropLast() {
+                line.trimmed
+            }
+        }
+    }
+    
+}

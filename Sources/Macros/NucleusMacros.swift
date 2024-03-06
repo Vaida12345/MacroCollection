@@ -8,6 +8,64 @@
 import Foundation
 
 
+/// Generates the methods required by `Codable` for the stored properties with customizations.
+///
+/// Use this macro only when you need customizations on how the values should be encoded and decoded that ``AttributeEncodeOptions`` cannot achieve. Otherwise, ``codable()`` would be a better choice.
+///
+/// This macro comes with two requirements: `_encoded(to:)` and `init(_from:)`. Any **key** used within these methods would indicate that you will handle the coding of the represented properties yourself. The properties for the keys not observed here will be coded automatically.
+///
+/// The macros of ``transient()`` and ``encodeOptions(_:)`` can be used to control the auto generated coding behaviors.
+///
+/// ### Usage
+///
+/// Apply this macro to a class to generate memberwise codable conformances.
+///
+/// ```swift
+/// @customCodable
+/// struct Model {
+///     var specialProperty: Int
+///     var normalProperty: String
+/// }
+/// ```
+///
+/// Within the protocol requirements, define your special properties. Any properties not defined here will be automatically handled.
+/// ```swift
+/// private func _encode(to container: inout KeyedEncodingContainer<CodingKeys>) throws {
+///     try container.encode(self.specialProperty.byteSwapped, forKey: .specialProperty)
+/// }
+///
+/// private init?(_from container: inout KeyedDecodingContainer<CodingKeys>) throws {
+///     self.specialProperty = try container.decode(Int.self, forKey: .specialProperty).byteSwapped
+///
+///     return nil // Protocol requirement: enabling partial initialization
+/// }
+/// ```
+///
+/// The generated encoding and decoding functions will copy your customized function, with the auto generated ones.
+/// ```swift
+/// func encode(to encoder: Encoder) throws {
+///     var container = encoder.container(keyedBy: CodingKeys.self)
+///     try container.encode(self.normalProperty, forKey: .normalProperty)
+///     try container.encode(self.specialProperty.byteSwapped, forKey: .specialProperty)
+/// }
+///
+/// init(from decoder: Decoder) throws {
+///     let container = try decoder.container(keyedBy: CodingKeys.self)
+///     self.normalProperty = try container.decode(forKey: .normalProperty)
+///     self.specialProperty = try container.decode(Int.self, forKey: .specialProperty).byteSwapped
+/// }
+/// ```
+///
+/// ## Topics
+///
+/// ### Controlling Encode
+/// - ``transient()``
+/// - ``encodeOptions(_:)``
+@attached(extension, conformances: Codable, names: named(encode(to:)), named(CodingKeys), named(init))
+@attached(member, names: named(init(from:)))
+public macro customCodable() = #externalMacro(module: "MacrosDefinitions", type: "customCodable")
+
+
 /// Generates the methods required by `Codable` for the stored properties.
 ///
 /// Apply this macro to a class to generate memberwise codable conformances.
@@ -54,6 +112,9 @@ import Foundation
 /// ### Controlling Encode
 /// - ``transient()``
 /// - ``encodeOptions(_:)``
+///
+/// ### More Customizations
+/// - ``customCodable()``
 @attached(extension, conformances: Codable, names: named(encode(to:)), named(CodingKeys), named(init))
 @attached(member, names: named(init))
 public macro codable() = #externalMacro(module: "MacrosDefinitions", type: "codable")
@@ -105,6 +166,10 @@ public macro transient() = #externalMacro(module: "MacrosDefinitions", type: "tr
 /// ```
 ///
 /// The other generated codes are updated according.
+///
+/// ## Topics
+/// ### Controlling Coding
+/// - ``AttributeEncodeOptions``
 @attached(peer)
 public macro encodeOptions(_ options: AttributeEncodeOptions...) = #externalMacro(module: "MacrosDefinitions", type: "encodeOptions")
 

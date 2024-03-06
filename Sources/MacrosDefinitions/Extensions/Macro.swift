@@ -33,7 +33,7 @@ extension Macro {
             
             // there may be multiple identifiers associated with the same member declaration, ie, `let a, b = 1`
             return try variables.bindings.compactMap { variable -> T? in
-                guard let name = variable.pattern.as(IdentifierPatternSyntax.self)?.identifier.text else { return nil }
+                guard let name = variable.pattern.as(IdentifierPatternSyntax.self)?.identifier.trimmed.text else { return nil }
                 
                 // if constant property with default value, ignore.
                 if ignoreConstantProperties => (variables.bindingSpecifier.tokenKind == .keyword(.let) && variable.initializer != nil) { return nil }
