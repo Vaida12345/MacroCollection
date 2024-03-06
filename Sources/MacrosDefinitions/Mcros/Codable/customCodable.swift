@@ -145,7 +145,9 @@ public enum customCodable: ExtensionMacro, MemberMacro {
                                   name: "encode",
                                   signature: .init(parameterClause: .init(parameters: .init([.init(firstName: "to", secondName: "encoder", type: .identifier("Encoder"))])),
                                                    effectSpecifiers: .init(throwsSpecifier: .keyword(.throws)))) {
-            "var container = encoder.container(keyedBy: CodingKeys.self)"
+            if !lines.isEmpty && !customEncode.isEmpty {
+                "var container = encoder.container(keyedBy: CodingKeys.self)"
+            }
             
             for line in lines {
                 line
@@ -191,7 +193,9 @@ public enum customCodable: ExtensionMacro, MemberMacro {
         return InitializerDeclSyntax(modifiers: modifiers,
                                      signature: .init(parameterClause: .init(parameters: .init([.init(firstName: "from", secondName: "decoder", type: .identifier("Decoder"))])),
                                                       effectSpecifiers: .init(throwsSpecifier: .keyword(.throws)))) {
-            "let container = try decoder.container(keyedBy: CodingKeys.self)"
+            if !lines.isEmpty && !customDecode.dropLast().isEmpty {
+                "let container = try decoder.container(keyedBy: CodingKeys.self)"
+            }
             
             for line in lines {
                 line
