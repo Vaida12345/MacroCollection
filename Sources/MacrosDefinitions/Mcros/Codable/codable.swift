@@ -21,7 +21,7 @@ public enum codable: ExtensionMacro, MemberMacro {
                                  in context: some SwiftSyntaxMacros.MacroExpansionContext
     ) throws -> [SwiftSyntax.DeclSyntax] {
         guard declaration.is(StructDeclSyntax.self) || declaration.is(ClassDeclSyntax.self) else { return [] } // let the other expand handle the throwing.
-        guard !declaration.attributes.contains(where: { $0.as(AttributeSyntax.self)?.attributeName.as(IdentifierTypeSyntax.self)?.name.text == "customCodable" }) else { return [] }
+        guard !_has(attribute: "customCodable", declaration: declaration) else { return [] }
         
         let memberwiseInitializer = try memberwiseInitializable.expansion(of: node, providingMembersOf: declaration, in: context)
         
@@ -43,14 +43,11 @@ public enum codable: ExtensionMacro, MemberMacro {
             throw DiagnosticsError.shouldRemoveMacro(for: declaration, node: node, message: "@codable should only be applied to `struct` or `class`")
         }
         
-        guard !declaration.attributes.contains(where: { $0.as(AttributeSyntax.self)?.attributeName.as(IdentifierTypeSyntax.self)?.name.text == "customCodable" }) else {
+        guard !_has(attribute: "customCodable", declaration: declaration) else {
             throw DiagnosticsError.shouldRemoveMacro(for: declaration, node: node, message: "@codable is obsolete when used with `customCodable`")
         }
         
-        var shouldDeclareInheritance = true
-        if let inheritedTypes = declaration.inheritanceClause?.inheritedTypes {
-            shouldDeclareInheritance = !inheritedTypes.contains(where: { $0.type.as(IdentifierTypeSyntax.self)?.name.text == "Codable" })
-        }
+        let shouldDeclareInheritance = !_has(inheritance: "Codable", declaration: declaration)
         
         return try [ExtensionDeclSyntax("extension \(type)\(raw: shouldDeclareInheritance ? ": Codable" : "")") {
             if let line = try generateCodingKeys(of: node, providingMembersOf: declaration, in: context) { .init(leadingTrivia: .newlines(2), decl: line, trailingTrivia: .newlines(2)) }

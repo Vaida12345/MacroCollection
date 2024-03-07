@@ -29,7 +29,7 @@ public enum customCodable: ExtensionMacro, MemberMacro {
         })?.decl.as(InitializerDeclSyntax.self)?.body?.statements
         guard let customDecode else { return [] } // the other expansion will handle the throwing.
         
-        let memberwiseInitializer: [DeclSyntax] = if !declaration.attributes.contains(where: { $0.as(AttributeSyntax.self)?.attributeName.as(IdentifierTypeSyntax.self)?.name.text == "dataProviding" }) {
+        let memberwiseInitializer: [DeclSyntax] = if !_has(attribute: "dataProviding", declaration: declaration) {
             try memberwiseInitializable.expansion(of: node, providingMembersOf: declaration, in: context)
         } else {
             []
@@ -107,10 +107,7 @@ public enum customCodable: ExtensionMacro, MemberMacro {
         
         // MARK: -
         
-        var shouldDeclareInheritance = true
-        if let inheritedTypes = declaration.inheritanceClause?.inheritedTypes {
-            shouldDeclareInheritance = !inheritedTypes.contains(where: { $0.type.as(IdentifierTypeSyntax.self)?.name.text == "Codable" })
-        }
+        let shouldDeclareInheritance = !_has(inheritance: "Codable", declaration: declaration)
         
         return try [ExtensionDeclSyntax("extension \(type)\(raw: shouldDeclareInheritance ? ": Codable" : "")") {
             if let line = try codable.generateCodingKeys(of: node, providingMembersOf: declaration, in: context) { .init(leadingTrivia: .newlines(2), decl: line, trailingTrivia: .newlines(2)) }

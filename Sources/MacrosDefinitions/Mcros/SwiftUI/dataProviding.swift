@@ -24,8 +24,7 @@ public enum dataProviding: MemberMacro, ExtensionMacro {
             throw DiagnosticsError.shouldRemoveMacro(for: declaration, node: node, message: "@dataProviding should only be applied to `class`")
         }
         
-        guard declaration.attributes.contains(where: { $0.as(AttributeSyntax.self)?.attributeName.as(IdentifierTypeSyntax.self)?.name.text == "Observable" }) ||
-                (declaration.inheritanceClause?.inheritedTypes.contains(where: { $0.type.as(IdentifierTypeSyntax.self)?.name.text == "ObservableObject" }) ?? false) else {
+        guard _has(attribute: "Observable", declaration: declaration) || _has(inheritance: "ObservableObject", declaration: declaration) else {
             var replacement_observable = declaration.attributes
             replacement_observable.append(.attribute(AttributeSyntax(leadingTrivia: .newline, attributeName: .identifier("Observable"))))
             
@@ -60,7 +59,7 @@ public enum dataProviding: MemberMacro, ExtensionMacro {
         try assertAllMembersHaveDefaultValue(declaration: declaration)
         
         // decl
-        let decodableDecl: InitializerDeclSyntax? = if declaration.attributes.contains(where: { $0.as(AttributeSyntax.self)?.attributeName.as(IdentifierTypeSyntax.self)?.name.text == "customCodable" }) {
+        let decodableDecl: InitializerDeclSyntax? = if _has(attribute: "customCodable", declaration: declaration) {
             nil
         } else {
             try codable.generateDecode(of: node, providingMembersOf: declaration, in: context)
@@ -95,11 +94,12 @@ public enum dataProviding: MemberMacro, ExtensionMacro {
         var shouldDeclareDataProviderInheritance = true
         var shouldDeclareCodableInheritance = true
         if let inheritedTypes = declaration.inheritanceClause?.inheritedTypes {
-            shouldDeclareDataProviderInheritance = !inheritedTypes.contains(where: { $0.type.as(IdentifierTypeSyntax.self)?.name.text == "DataProvider" })
-            shouldDeclareCodableInheritance = !inheritedTypes.contains(where: { $0.type.as(IdentifierTypeSyntax.self)?.name.text == "Codable" })
+            shouldDeclareDataProviderInheritance = !_has(inheritance: "DataProvider", declaration: declaration)
+            shouldDeclareCodableInheritance = !_has(inheritance: "Codable", declaration: declaration)
         }
+        let isCustomCodable = _has(attribute: "customCodable", declaration: declaration)
         if shouldDeclareCodableInheritance {
-            if declaration.attributes.contains(where: { $0.as(AttributeSyntax.self)?.attributeName.as(IdentifierTypeSyntax.self)?.name.text == "customCodable" }) {
+            if isCustomCodable {
                 shouldDeclareCodableInheritance = false
             }
         }
@@ -114,8 +114,6 @@ public enum dataProviding: MemberMacro, ExtensionMacro {
         } else {
             extensionTypes = ""
         }
-        
-        let isCustomCodable = declaration.attributes.contains(where: { $0.as(AttributeSyntax.self)?.attributeName.as(IdentifierTypeSyntax.self)?.name.text == "customCodable" })
         
         return try [
             ExtensionDeclSyntax("extension \(type)\(raw: extensionTypes)") {
