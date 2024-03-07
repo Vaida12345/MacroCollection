@@ -25,11 +25,11 @@ public enum customCodable: ExtensionMacro, MemberMacro {
             let parameters = decl.signature.parameterClause.parameters
             guard parameters.count == 1,
                   let parameter = parameters.first else { return false }
-            return parameter.firstName == "_from" && parameter.secondName == "container" && parameter.type.description == "inout KeyedDecodingContainer<CodingKeys>"
+            return parameter.firstName.text == "_from" && parameter.secondName?.text == "container" && parameter.type.description == "inout KeyedDecodingContainer<CodingKeys>"
         })?.decl.as(InitializerDeclSyntax.self)?.body?.statements
         guard let customDecode else { return [] } // the other expansion will handle the throwing.
         
-        let memberwiseInitializer: [DeclSyntax] = if !declaration.attributes.contains(where: { $0.as(AttributeSyntax.self)?.attributeName.as(IdentifierTypeSyntax.self) == "dataProviding" }) {
+        let memberwiseInitializer: [DeclSyntax] = if !declaration.attributes.contains(where: { $0.as(AttributeSyntax.self)?.attributeName.as(IdentifierTypeSyntax.self)?.name.text == "dataProviding" }) {
             try memberwiseInitializable.expansion(of: node, providingMembersOf: declaration, in: context)
         } else {
             []
@@ -51,17 +51,17 @@ public enum customCodable: ExtensionMacro, MemberMacro {
         } else if let declaration = declaration.as(ClassDeclSyntax.self) {
             declarationName = declaration.name
         } else {
-            throw shouldRemoveMacroError(for: declaration, macroName: "@customCodable", message: "@customCodable should only be applied to `struct` or `class`")
+            throw DiagnosticsError.shouldRemoveMacro(for: declaration, node: node, message: "@customCodable should only be applied to `struct` or `class`")
         }
         
         // MARK: - Ensures conforms to protocol requirements.
         let customEncode = declaration.memberBlock.members.first(where: {
             guard let decl = $0.decl.as(FunctionDeclSyntax.self),
-                  decl.name == "_encode" else { return false }
+                  decl.name.text == "_encode" else { return false }
             let parameters = decl.signature.parameterClause.parameters
             guard parameters.count == 1,
                   let parameter = parameters.first else { return false }
-            return parameter.firstName == "to" && parameter.secondName == "container" && parameter.type.description == "inout KeyedEncodingContainer<CodingKeys>"
+            return parameter.firstName.text == "to" && parameter.secondName?.text == "container" && parameter.type.description == "inout KeyedEncodingContainer<CodingKeys>"
         })?.decl.as(FunctionDeclSyntax.self)?.body?.statements
         
         let customDecode = declaration.memberBlock.members.first(where: {
@@ -69,7 +69,7 @@ public enum customCodable: ExtensionMacro, MemberMacro {
             let parameters = decl.signature.parameterClause.parameters
             guard parameters.count == 1,
                   let parameter = parameters.first else { return false }
-            return parameter.firstName == "_from" && parameter.secondName == "container" && parameter.type.description == "inout KeyedDecodingContainer<CodingKeys>"
+            return parameter.firstName.text == "_from" && parameter.secondName?.text == "container" && parameter.type.description == "inout KeyedDecodingContainer<CodingKeys>"
         })
         
         guard customEncode != nil && customDecode != nil else {
@@ -136,7 +136,7 @@ public enum customCodable: ExtensionMacro, MemberMacro {
                     try container.encodeIfPresent(self.\(raw: name), forKey: .\(raw: name))
                 }
                 """
-            } else if try additionalInfo.encodeOptionalAsIfPresent && getType(for: variable, decl: decl, name: name, of: node).isOptional {
+            } else if try additionalInfo.encodeOptionalAsIfPresent && _getType(for: variable, decl: decl, name: name, of: node).isOptional {
                 syntax = "try container.encodeIfPresent(self.\(raw: name), forKey: .\(raw: name))"
             } else {
                 syntax = "try container.encode(self.\(raw: name), forKey: .\(raw: name))"
@@ -177,7 +177,7 @@ public enum customCodable: ExtensionMacro, MemberMacro {
             
             if additionalInfo.encodeIfNoneDefault, let defaultValue = additionalInfo.defaultValue {
                 syntax = "self.\(raw: name) = try container.decodeIfPresent(forKey: .\(raw: name)) ?? \(raw: defaultValue)"
-            } else if try additionalInfo.encodeOptionalAsIfPresent && getType(for: variable, decl: decl, name: name, of: node).isOptional {
+            } else if try additionalInfo.encodeOptionalAsIfPresent && _getType(for: variable, decl: decl, name: name, of: node).isOptional {
                 syntax = "self.\(raw: name) = try container.decodeIfPresent(forKey: .\(raw: name))"
             } else {
                 syntax = "self.\(raw: name) = try container.decode(forKey: .\(raw: name))"

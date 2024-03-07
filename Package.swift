@@ -14,13 +14,16 @@ let package = Package (
     ], products: [
         .library(name: "StratumMacros", targets: ["StratumMacros"])
     ], dependencies: [
-        .package(url: "https://github.com/apple/swift-syntax.git", from: "509.0.0")
+        .package(url: "https://github.com/apple/swift-syntax.git", from: "509.0.0"),
+        .package(name: "MacroEssentials",
+                 path: "~/Library/Mobile Documents/com~apple~CloudDocs/DataBase/Projects/Packages/MacroEssentials")
     ], targets: [
         .macro(name: "MacrosDefinitions",
                dependencies: [
                 .product(name: "SwiftSyntaxMacros", package: "swift-syntax"),
                 .product(name: "SwiftCompilerPlugin", package: "swift-syntax"),
-                .product(name: "SwiftSyntaxBuilder", package: "swift-syntax")
+                .product(name: "SwiftSyntaxBuilder", package: "swift-syntax"),
+                "MacroEssentials"
                ]),
         .target(name: "StratumMacros", dependencies: ["MacrosDefinitions"], path: "Sources/Macros"),
         

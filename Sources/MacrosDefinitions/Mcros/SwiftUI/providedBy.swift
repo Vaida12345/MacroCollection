@@ -21,9 +21,7 @@ public enum providedBy: MemberMacro {
     ) throws -> [SwiftSyntax.DeclSyntax] {
         guard let declaration = declaration.as(StructDeclSyntax.self),
               (declaration.inheritanceClause?.inheritedTypes.contains(where: { $0.type.as(IdentifierTypeSyntax.self)?.name.text == "App" }) ?? false) else {
-            throw shouldRemoveMacroError(for: declaration,
-                                         macroName: "@providedByData",
-                                         message: "@providedByData should only be applied to @main App")
+            throw DiagnosticsError.shouldRemoveMacro(for: declaration, node: node, message: "@providedByData should only be applied to @main App")
         }
         
 //        guard let bodyViewBlock = declaration.memberBlock.members.first(where: { $0.as(VariableDeclSyntax.self)?.bindings.last?.pattern.as(IdentifierPatternSyntax.self)?.identifier.text == "body" }) else {
@@ -33,7 +31,7 @@ public enum providedBy: MemberMacro {
 //        let functionName = "attachDataProviderEnvironment"
         guard let attribute = declaration.attributes.first(where: { $0.as(AttributeSyntax.self)?.attributeName.as(IdentifierTypeSyntax.self)?.name.text == "provided" }),
               let arguments = attribute.as(AttributeSyntax.self)?.arguments?.as(LabeledExprListSyntax.self),
-              arguments.first?.label == "by"
+              arguments.first?.label?.text == "by"
         else { return [] }
         
         let providers = arguments.compactMap { argument in

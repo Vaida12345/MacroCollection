@@ -20,9 +20,9 @@ public enum dataProviding: MemberMacro, ExtensionMacro {
                                  in context: some SwiftSyntaxMacros.MacroExpansionContext
     ) throws -> [SwiftSyntax.DeclSyntax] {
         // asserts
-        guard let declaration = declaration.as(ClassDeclSyntax.self) else { throw shouldRemoveMacroError(for: declaration,
-                                                                                                         macroName: "@dataProviding",
-                                                                                                         message: "@dataProviding should only be applied to `class`") }
+        guard let declaration = declaration.as(ClassDeclSyntax.self) else {
+            throw DiagnosticsError.shouldRemoveMacro(for: declaration, node: node, message: "@dataProviding should only be applied to `class`")
+        }
         
         guard declaration.attributes.contains(where: { $0.as(AttributeSyntax.self)?.attributeName.as(IdentifierTypeSyntax.self)?.name.text == "Observable" }) ||
                 (declaration.inheritanceClause?.inheritedTypes.contains(where: { $0.type.as(IdentifierTypeSyntax.self)?.name.text == "ObservableObject" }) ?? false) else {
@@ -39,37 +39,28 @@ public enum dataProviding: MemberMacro, ExtensionMacro {
                            message: .diagnostic(message: "DataProvider should be declared `Observable` or `ObservableObject`",
                                                 diagnosticID: id),
                            fixIts: [
-                            FixIt(message: .fixing(message: "declare `Observable`", diagnosticID: id),
-                                  changes: [.replace(oldNode: declaration.attributes.cast(Syntax.self), 
+                            FixIt(message: .diagnostic(message: "declare `Observable`", diagnosticID: id),
+                                  changes: [.replace(oldNode: declaration.attributes.cast(Syntax.self),
                                                      newNode: replacement_observable.cast(Syntax.self))]),
-                            FixIt(message: .fixing(message: "declare `ObservableObject`", diagnosticID: id),
-                                  changes: [.replace(oldNode: declaration.cast(Syntax.self), 
+                            FixIt(message: .diagnostic(message: "declare `ObservableObject`", diagnosticID: id),
+                                  changes: [.replace(oldNode: declaration.cast(Syntax.self),
                                                      newNode: replacement_observableObject.cast(Syntax.self))])
                            ])
             ])
         }
         
         guard declaration.modifiers.contains(where: { $0.name.tokenKind == .keyword(.final) }) else {
-            var replacement = declaration.modifiers
-            replacement.append(.init(name: .keyword(.final)))
-            
-            let id =  "\(Self.self).dataProviding.requiresFinal"
-            
-            throw DiagnosticsError(diagnostics: [
-                Diagnostic(node: node,
-                           message: .diagnostic(message: "DataProvider should be declared `final`",
-                                                diagnosticID: id),
-                           fixIt: .replace(message: .fixing(message: "declare `final`", diagnosticID: id), 
-                                           oldNode: declaration.modifiers,
-                                           newNode: replacement))
-            ])
+            throw DiagnosticsError("DataProvider should be declared `final", highlighting: node,
+                                   replacing: declaration.modifiers, message: "declare `final`") { replacement in
+                replacement.append(.init(name: .keyword(.final)))
+            }
         }
         
         
         try assertAllMembersHaveDefaultValue(declaration: declaration)
         
         // decl
-        let decodableDecl: InitializerDeclSyntax? = if declaration.attributes.contains(where: { $0.as(AttributeSyntax.self)?.attributeName.as(IdentifierTypeSyntax.self) == "customCodable" }) {
+        let decodableDecl: InitializerDeclSyntax? = if declaration.attributes.contains(where: { $0.as(AttributeSyntax.self)?.attributeName.as(IdentifierTypeSyntax.self)?.name.text == "customCodable" }) {
             nil
         } else {
             try codable.generateDecode(of: node, providingMembersOf: declaration, in: context)
@@ -99,9 +90,8 @@ public enum dataProviding: MemberMacro, ExtensionMacro {
                                  conformingTo protocols: [SwiftSyntax.TypeSyntax],
                                  in context: some SwiftSyntaxMacros.MacroExpansionContext
     ) throws -> [SwiftSyntax.ExtensionDeclSyntax] {
-        guard let declaration = declaration.as(ClassDeclSyntax.self) else { throw shouldRemoveMacroError(for: declaration,
-                                                                                                         macroName: "@dataProviding",
-                                                                                                         message: "@dataProviding should only be applied to `class`") }
+        guard let declaration = declaration.as(ClassDeclSyntax.self) else { 
+            throw DiagnosticsError.shouldRemoveMacro(for: declaration, node: node, message: "@dataProviding should only be applied to `class`") }
         var shouldDeclareDataProviderInheritance = true
         var shouldDeclareCodableInheritance = true
         if let inheritedTypes = declaration.inheritanceClause?.inheritedTypes {
@@ -109,7 +99,7 @@ public enum dataProviding: MemberMacro, ExtensionMacro {
             shouldDeclareCodableInheritance = !inheritedTypes.contains(where: { $0.type.as(IdentifierTypeSyntax.self)?.name.text == "Codable" })
         }
         if shouldDeclareCodableInheritance {
-            if declaration.attributes.contains(where: { $0.as(AttributeSyntax.self)?.attributeName.as(IdentifierTypeSyntax.self) == "customCodable" }) {
+            if declaration.attributes.contains(where: { $0.as(AttributeSyntax.self)?.attributeName.as(IdentifierTypeSyntax.self)?.name.text == "customCodable" }) {
                 shouldDeclareCodableInheritance = false
             }
         }
@@ -125,7 +115,7 @@ public enum dataProviding: MemberMacro, ExtensionMacro {
             extensionTypes = ""
         }
         
-        let isCustomCodable = declaration.attributes.contains(where: { $0.as(AttributeSyntax.self)?.attributeName.as(IdentifierTypeSyntax.self) == "customCodable" })
+        let isCustomCodable = declaration.attributes.contains(where: { $0.as(AttributeSyntax.self)?.attributeName.as(IdentifierTypeSyntax.self)?.name.text == "customCodable" })
         
         return try [
             ExtensionDeclSyntax("extension \(type)\(raw: extensionTypes)") {
@@ -149,20 +139,15 @@ public enum dataProviding: MemberMacro, ExtensionMacro {
     }
     
     static func assertAllMembersHaveDefaultValue(declaration: some SwiftSyntax.DeclGroupSyntax) throws {
-        let _: [Void] = try memberwiseMap(for: declaration) { variable, decl, name in
+        let _: [Void] = try _memberwiseMap(for: declaration) { variable, decl, name, type in
+            guard type != .computed && !type.isStatic && !(type == .staticConstant && variable.initializer != nil) else { return }
+            
             guard variable.initializer != nil else {
-                var replacement = variable
-                replacement.initializer = InitializerClauseSyntax(equal: .equalToken(leadingTrivia: .space, trailingTrivia: .space),
-                                                                  value: EditorPlaceholderExprSyntax(placeholder: .identifier("<#default value#>")))
-                let id = "dataProviding.\(name).missing_default_value"
-                throw DiagnosticsError(diagnostics: [
-                    Diagnostic(node: variable,
-                               message: .diagnostic(message: "A default value must be provided for data provider properties.",
-                                                    diagnosticID: id),
-                               fixIt: .replace(message: .fixing(message: "Provide a default value", diagnosticID: id),
-                                               oldNode: variable,
-                                               newNode: replacement))
-                ])
+                throw DiagnosticsError("A default value must be provided for data provider properties", highlighting: variable,
+                                       replacing: variable, message: "Provide a default value") { replacement in
+                    replacement.initializer = InitializerClauseSyntax(equal: .equalToken(leadingTrivia: .space, trailingTrivia: .space),
+                                                                      value: EditorPlaceholderExprSyntax(placeholder: .identifier("<#default value#>")))
+                }
             }
             
             return

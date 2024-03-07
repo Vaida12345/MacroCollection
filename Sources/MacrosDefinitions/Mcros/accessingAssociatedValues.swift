@@ -9,6 +9,7 @@ import Foundation
 import SwiftSyntax
 import SwiftSyntaxMacros
 import SwiftSyntaxBuilder
+import SwiftDiagnostics
 
 
 public enum accessingAssociatedValues: ExtensionMacro {
@@ -19,9 +20,9 @@ public enum accessingAssociatedValues: ExtensionMacro {
                                  conformingTo protocols: [SwiftSyntax.TypeSyntax],
                                  in context: some SwiftSyntaxMacros.MacroExpansionContext
     ) throws -> [SwiftSyntax.ExtensionDeclSyntax] {
-        guard let declaration = declaration.as(EnumDeclSyntax.self) else { throw shouldRemoveMacroError(for: declaration,
-                                                                                                        macroName: "@accessingAssociatedValues",
-                                                                                                        message: "@codable should only be applied to `enum`") }
+        guard let declaration = declaration.as(EnumDeclSyntax.self) else {
+            throw DiagnosticsError.shouldRemoveMacro(for: declaration, node: node, message: "@codable should only be applied to `enum`")
+        }
         
         let enumMembers = declaration.memberBlock.members.flatMap { members in
             let decl = members.decl.as(EnumCaseDeclSyntax.self)!

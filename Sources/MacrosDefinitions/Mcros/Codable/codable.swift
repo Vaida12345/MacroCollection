@@ -10,6 +10,7 @@ import SwiftSyntax
 import SwiftSyntaxMacros
 import SwiftSyntaxBuilder
 import SwiftDiagnostics
+import MacroEssentials
 
 
 public enum codable: ExtensionMacro, MemberMacro {
@@ -20,7 +21,7 @@ public enum codable: ExtensionMacro, MemberMacro {
                                  in context: some SwiftSyntaxMacros.MacroExpansionContext
     ) throws -> [SwiftSyntax.DeclSyntax] {
         guard declaration.is(StructDeclSyntax.self) || declaration.is(ClassDeclSyntax.self) else { return [] } // let the other expand handle the throwing.
-        guard !declaration.attributes.contains(where: { $0.as(AttributeSyntax.self)?.attributeName.as(IdentifierTypeSyntax.self) == "customCodable" }) else { return [] }
+        guard !declaration.attributes.contains(where: { $0.as(AttributeSyntax.self)?.attributeName.as(IdentifierTypeSyntax.self)?.name.text == "customCodable" }) else { return [] }
         
         let memberwiseInitializer = try memberwiseInitializable.expansion(of: node, providingMembersOf: declaration, in: context)
         
@@ -39,11 +40,11 @@ public enum codable: ExtensionMacro, MemberMacro {
                                  in context: some SwiftSyntaxMacros.MacroExpansionContext
     ) throws -> [SwiftSyntax.ExtensionDeclSyntax] {
         guard declaration.is(StructDeclSyntax.self) || declaration.is(ClassDeclSyntax.self) else {
-            throw shouldRemoveMacroError(for: declaration, macroName: "@codable", message: "@codable should only be applied to `struct` or `class`")
+            throw DiagnosticsError.shouldRemoveMacro(for: declaration, node: node, message: "@codable should only be applied to `struct` or `class`")
         }
         
-        guard !declaration.attributes.contains(where: { $0.as(AttributeSyntax.self)?.attributeName.as(IdentifierTypeSyntax.self) == "customCodable" }) else {
-            throw shouldRemoveMacroError(for: declaration, macroName: "@codable", message: "@codable is obsolete when used with `customCodable`")
+        guard !declaration.attributes.contains(where: { $0.as(AttributeSyntax.self)?.attributeName.as(IdentifierTypeSyntax.self)?.name.text == "customCodable" }) else {
+            throw DiagnosticsError.shouldRemoveMacro(for: declaration, node: node, message: "@codable is obsolete when used with `customCodable`")
         }
         
         var shouldDeclareInheritance = true
@@ -78,7 +79,7 @@ public enum codable: ExtensionMacro, MemberMacro {
                     try container.encodeIfPresent(self.\(raw: name), forKey: .\(raw: name))
                 }
                 """
-            } else if try additionalInfo.encodeOptionalAsIfPresent && getType(for: variable, decl: decl, name: name, of: node).isOptional {
+            } else if try additionalInfo.encodeOptionalAsIfPresent && _getType(for: variable, decl: decl, name: name, of: node).isOptional {
                 syntax = "try container.encodeIfPresent(self.\(raw: name), forKey: .\(raw: name))"
             } else {
                 syntax = "try container.encode(self.\(raw: name), forKey: .\(raw: name))"
@@ -117,7 +118,7 @@ public enum codable: ExtensionMacro, MemberMacro {
             
             if additionalInfo.encodeIfNoneDefault, let defaultValue = additionalInfo.defaultValue {
                 syntax = "self.\(raw: name) = try container.decodeIfPresent(forKey: .\(raw: name)) ?? \(raw: defaultValue)"
-            } else if try additionalInfo.encodeOptionalAsIfPresent && getType(for: variable, decl: decl, name: name, of: node).isOptional {
+            } else if try additionalInfo.encodeOptionalAsIfPresent && _getType(for: variable, decl: decl, name: name, of: node).isOptional {
                 syntax = "self.\(raw: name) = try container.decodeIfPresent(forKey: .\(raw: name))"
             } else {
                 syntax = "self.\(raw: name) = try container.decode(forKey: .\(raw: name))"
@@ -170,13 +171,11 @@ public enum codable: ExtensionMacro, MemberMacro {
     }
     
     static func memberwiseMap<T>(for declaration: some SwiftSyntax.DeclGroupSyntax,
-                                              ignoreComputedProperties: Bool = true,
-                                              ignoreConstantProperties: Bool = true,
                                               handler: (_ variable: PatternBindingListSyntax.Element, _ decl: VariableDeclSyntax, _ name: String, _ additionalInfo: AdditionalInfo) throws -> T?
     ) rethrows -> [T] {
-        return try memberwiseMap(for: declaration,
-                      ignoreComputedProperties: ignoreComputedProperties,
-                      ignoreConstantProperties: ignoreConstantProperties) { variable, decl, name in
+        return try _memberwiseMap(for: declaration) { variable, decl, name, type in
+            
+            guard type != .computed && !type.isStatic && !(type == .staticConstant && variable.initializer != nil) else { return nil }
             
             var isIgnored = false
             var warnNonNilEncodeIfPresent = false
@@ -186,16 +185,16 @@ public enum codable: ExtensionMacro, MemberMacro {
             for attribute in decl.attributes {
                 guard let attribute = attribute.as(AttributeSyntax.self),
                       let attributeName = attribute.attributeName.as(IdentifierTypeSyntax.self) else { continue }
-                if attributeName.name == "transient" { isIgnored = true }
+                if attributeName.name.text == "transient" { isIgnored = true }
                 if let args = attribute.arguments?.as(LabeledExprListSyntax.self) {
                     encodeOptionsArgsCount = args.count
-                    if attributeName.name == "encodeOptions" {
+                    if attributeName.name.text == "encodeOptions" {
                         for arg in args {
-                            guard let memberName = arg.expression.as(MemberAccessExprSyntax.self)?.declName.baseName else { continue }
+                            guard let memberName = arg.expression.as(MemberAccessExprSyntax.self)?.declName.baseName.text else { continue }
                             if memberName == "ignored" {
                                 isIgnored = true
                             } else if memberName == "encodeIfPresent" {
-                                if try !self.getType(for: variable, decl: decl, name: name, of: variable).isOptional {
+                                if try !_getType(for: variable, decl: decl, name: name, of: variable).isOptional {
                                     warnNonNilEncodeIfPresent = true
                                 } else {
                                     additionalInfo.encodeOptionalAsIfPresent = true
@@ -227,8 +226,8 @@ public enum codable: ExtensionMacro, MemberMacro {
                             guard let attribute = attribute.as(AttributeSyntax.self),
                                   let attributeName = attribute.attributeName.as(IdentifierTypeSyntax.self) else { return false }
                             if let args = attribute.arguments?.as(LabeledExprListSyntax.self){
-                                if attributeName.name == "encodeOptions" {
-                                    if args.contains(where: { $0.expression.as(MemberAccessExprSyntax.self)?.declName.baseName == "encodeIfPresent" }) {
+                                if attributeName.name.text == "encodeOptions" {
+                                    if args.contains(where: { $0.expression.as(MemberAccessExprSyntax.self)?.declName.baseName.text == "encodeIfPresent" }) {
                                         return true
                                     }
                                 }
@@ -244,8 +243,8 @@ public enum codable: ExtensionMacro, MemberMacro {
                             guard var attribute = _attribute.as(AttributeSyntax.self),
                                   let attributeName = attribute.attributeName.as(IdentifierTypeSyntax.self) else { return _attribute }
                             if var args = attribute.arguments?.as(LabeledExprListSyntax.self) {
-                                if attributeName.name == "encodeOptions" {
-                                    if let encodeIfPresentArg = args.firstIndex(where: { $0.expression.as(MemberAccessExprSyntax.self)?.declName.baseName == "encodeIfPresent" }) {
+                                if attributeName.name.text == "encodeOptions" {
+                                    if let encodeIfPresentArg = args.firstIndex(where: { $0.expression.as(MemberAccessExprSyntax.self)?.declName.baseName.text == "encodeIfPresent" }) {
                                         args.remove(at: encodeIfPresentArg)
                                         args[args.index(before: encodeIfPresentArg)].trailingComma = nil
                                         attribute.arguments = args.as(AttributeSyntax.Arguments.self)
