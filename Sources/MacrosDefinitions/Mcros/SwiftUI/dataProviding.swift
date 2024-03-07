@@ -91,12 +91,8 @@ public enum dataProviding: MemberMacro, ExtensionMacro {
     ) throws -> [SwiftSyntax.ExtensionDeclSyntax] {
         guard let declaration = declaration.as(ClassDeclSyntax.self) else { 
             throw DiagnosticsError.shouldRemoveMacro(for: declaration, node: node, message: "@dataProviding should only be applied to `class`") }
-        var shouldDeclareDataProviderInheritance = true
-        var shouldDeclareCodableInheritance = true
-        if let inheritedTypes = declaration.inheritanceClause?.inheritedTypes {
-            shouldDeclareDataProviderInheritance = !_has(inheritance: "DataProvider", declaration: declaration)
-            shouldDeclareCodableInheritance = !_has(inheritance: "Codable", declaration: declaration)
-        }
+        let shouldDeclareDataProviderInheritance = !_has(inheritance: "DataProvider", declaration: declaration)
+        var shouldDeclareCodableInheritance = !_has(inheritance: "Codable", declaration: declaration)
         let isCustomCodable = _has(attribute: "customCodable", declaration: declaration)
         if shouldDeclareCodableInheritance {
             if isCustomCodable {
