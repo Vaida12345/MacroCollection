@@ -191,9 +191,9 @@ public enum customCodable: ExtensionMacro, MemberMacro {
             }
         }
         
-        return InitializerDeclSyntax(modifiers: modifiers,
-                                     signature: .init(parameterClause: .init(parameters: .init([.init(firstName: "from", secondName: "decoder", type: .identifier("Decoder"))])),
-                                                      effectSpecifiers: .init(throwsSpecifier: .keyword(.throws)))) {
+        return try InitializerDeclSyntax(modifiers: modifiers,
+                                         signature: .init(parameterClause: .init(parameters: .init([.init(firstName: "from", secondName: "decoder", type: .identifier("Decoder"))])),
+                                                          effectSpecifiers: .init(throwsSpecifier: .keyword(.throws)))) {
             if !lines.isEmpty && !customDecode.dropLast().isEmpty {
                 "let container = try decoder.container(keyedBy: CodingKeys.self)"
             }
@@ -204,6 +204,20 @@ public enum customCodable: ExtensionMacro, MemberMacro {
             
             for line in customDecode.dropLast() {
                 line.trimmed
+            }
+            
+            if let function: FunctionDeclSyntax = try declaration.memberBlock.members.compactMap({
+                guard let function = $0.as(MemberBlockItemSyntax.self)?.decl.as(FunctionDeclSyntax.self) else { return nil }
+                guard function.name.isEqual(to: "postDecodeAction") else { return nil }
+                guard function.signature.effectSpecifiers?.asyncSpecifier == nil else {
+                    throw DiagnosticsError("function `postDecodeAction` cannot be async", highlighting: function)
+                }
+                return function
+            }).first {
+                let hasTry = function.signature.effectSpecifiers?.throwsSpecifier != nil
+                let isStatic = function.modifiers.contains(where: { $0.name.tokenKind == .keyword(.static) })
+                
+                "\(raw: hasTry ? "try " : "")\(raw: isStatic ? "Self" : "self").postDecodeAction()"
             }
         }
     }

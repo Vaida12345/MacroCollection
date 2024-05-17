@@ -56,6 +56,12 @@ import Foundation
 /// }
 /// ```
 ///
+/// ## Additional Options
+///
+/// Just like ``codable()``, there are a few other options, including ``transient()``, that can be accessed using ``encodeOptions(_:)``. For a list of options, see ``AttributeEncodeOptions``.
+///
+/// A backdoor was made for function with signature `static? func postDecodeAction() throws?`. Such function will be appended to the end of generated decode implementation if present.
+///
 /// ## Topics
 ///
 /// ### Controlling Encode
@@ -106,6 +112,12 @@ public macro customCodable() = #externalMacro(module: "MacrosDefinitions", type:
 /// ```
 ///
 /// The other generated codes are updated according.
+///
+/// ## Additional Options
+///
+/// There are a few other options that can be accessed using ``encodeOptions(_:)``. For a list of options, see ``AttributeEncodeOptions``.
+///
+/// A backdoor was made for function with signature `static? func postDecodeAction() throws?`. Such function will be appended to the end of generated decode implementation if present.
 ///
 /// ## Topics
 ///
