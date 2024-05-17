@@ -2,13 +2,7 @@ import SwiftSyntaxMacros
 import SwiftSyntax
 
 let syntax: DeclSyntax = """
-struct Model {
-
-    static func postDecodeAction() async throws {
-        
-    }
-
-}
+let id = UUID()
 """
 
 // Auto generate coding keys

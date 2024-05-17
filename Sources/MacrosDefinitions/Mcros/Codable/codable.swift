@@ -186,7 +186,7 @@ public enum codable: ExtensionMacro, MemberMacro {
     ) rethrows -> [T] {
         return try _memberwiseMap(for: declaration) { variable, decl, name, type in
             
-            guard type != .computed && !type.isStatic && !(type == .staticConstant && variable.initializer != nil) else { return nil }
+            guard type != .computed && !type.isStatic && !((type == .staticConstant || type == .storedConstant) && variable.initializer != nil) else { return nil }
             
             var isIgnored = false
             var warnNonNilEncodeIfPresent = false

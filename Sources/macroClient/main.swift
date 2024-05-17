@@ -7,9 +7,7 @@ import SwiftUI
 @codable
 final class Cat {
     
-    func postDecodeAction() throws {
-        
-    }
+    let id = UUID()
     
 }
 
