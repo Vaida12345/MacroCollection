@@ -16,6 +16,7 @@ struct NucleusMacrosPlugin: CompilerPlugin {
         providedBy.self,
         environment.self,
         encodeOptions.self,
-        customCodable.self
+        customCodable.self,
+        encrypt.self
     ]
 }

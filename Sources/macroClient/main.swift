@@ -4,10 +4,4 @@ import Foundation
 import SwiftUI
 
 
-@codable
-final class Cat {
-    
-    let id = UUID()
-    
-}
-
+print(#encrypt("hello world"))

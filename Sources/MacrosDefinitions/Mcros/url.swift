@@ -15,11 +15,10 @@ public enum url: ExpressionMacro {
     public static func expansion(of node: some SwiftSyntax.FreestandingMacroExpansionSyntax,
                                  in context: some SwiftSyntaxMacros.MacroExpansionContext
     ) throws -> SwiftSyntax.ExprSyntax {
-        guard
-            let argument = node.argumentList.first?.expression,
-            let segments = argument.as(StringLiteralExprSyntax.self)?.segments,
-            segments.count == 1,
-            case .stringSegment(let segment)? = segments.first
+        guard let argument = node.argumentList.first?.expression,
+              let segments = argument.as(StringLiteralExprSyntax.self)?.segments,
+              segments.count == 1,
+              case .stringSegment(let segment)? = segments.first
         else {
             fatalError("Compiler Bug: The passed argument is not static string")
         }

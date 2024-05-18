@@ -220,6 +220,37 @@ public macro memberwiseInitializable() = #externalMacro(module: "MacrosDefinitio
 public macro url(_ string: StaticString) -> URL = #externalMacro(module: "MacrosDefinitions", type: "url")
 
 
+/// Encrypt the sensitive `string` in the build product.
+///
+/// Instead of storing the string, this macro would store the cipher text and decryption key in binary. Hence making it harder for users to find the sensitive info from the build product.
+///
+/// In this implementation, `ChaChaPoly`, aka, `ChaCha20-Poly1305` cipher is used.
+///
+/// ## Example
+///
+/// ``` swift
+/// #encrypt("hello world")
+/// ```
+///
+/// Would expand to
+///
+/// ```swift
+/// { () -> String in
+///     let key: (UInt64, UInt64, UInt64, UInt64) = ...
+///     var cipher = Data(capacity: 39)
+///     cipher.append((191 as UInt8))
+///     cipher.append((114 as UInt8))
+///     ...
+///
+///     return _encrypt_macro_decrypt(key: key, cipher: cipher)
+/// }()
+/// ```
+///
+/// The `key` and `cipher` are different for each build, and these implementation details are completely hidden under the hood, users can treat `#encrypt("hello world")` as `"hello world"`.
+@freestanding(expression)
+public macro encrypt(_ string: StaticString) -> String = #externalMacro(module: "MacrosDefinitions", type: "encrypt")
+
+
 /// Creates a system-defined symbol with compile-time validation.
 ///
 /// This macro would produce compile errors if the symbol is not defined.
