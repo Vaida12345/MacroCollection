@@ -27,10 +27,6 @@ let package = Package (
                ]),
         .target(name: "StratumMacros", dependencies: ["MacrosDefinitions"], path: "Sources/Macros"),
         
-        .executableTarget(name: "macroRoom", dependencies: [
-            .product(name: "SwiftSyntaxMacros", package: "swift-syntax"),
-            .product(name: "SwiftCompilerPlugin", package: "swift-syntax")
-        ]),
         // A client of the library, which is able to use the macro in its own code.
         .executableTarget(name: "macroClient", dependencies: ["StratumMacros"]),
 
