@@ -49,7 +49,7 @@ public enum dataProviding: MemberMacro, ExtensionMacro {
         }
         
         guard declaration.modifiers.contains(where: { $0.name.tokenKind == .keyword(.final) }) else {
-            throw DiagnosticsError("DataProvider should be declared `final", highlighting: node,
+            throw DiagnosticsError("DataProvider should be declared `final`", highlighting: node,
                                    replacing: declaration.modifiers, message: "declare `final`") { replacement in
                 replacement.append(.init(name: .keyword(.final)))
             }

@@ -28,7 +28,7 @@ public enum environment: DeclarationMacro {
         guard nodes.isEmpty else { return nodes }
         return node.as(MacroExpansionDeclSyntax.self)!.arguments.compactMap {
             guard let identifier = $0.expression.as(MemberAccessExprSyntax.self)?.base else { return nil }
-            return DeclSyntax("@Environment(\($0)) private var \(raw: identifier.description.frontToLower())")
+            return DeclSyntax("@Environment(\(raw: identifier.description).self) private var \(raw: identifier.description.frontToLower())")
         }
     }
     
