@@ -191,9 +191,10 @@ public enum customCodable: ExtensionMacro, MemberMacro {
             }
         }
         
-        return try InitializerDeclSyntax(modifiers: modifiers,
-                                         signature: .init(parameterClause: .init(parameters: .init([.init(firstName: "from", secondName: "decoder", type: .identifier("Decoder"))])),
-                                                          effectSpecifiers: .init(throwsSpecifier: .keyword(.throws)))) {
+        let signature: FunctionSignatureSyntax = .init(parameterClause: .init(parameters: .init([.init(firstName: "from", secondName: "decoder", type: .identifier("Decoder"))])),
+                                                       effectSpecifiers: .init(throwsSpecifier: .keyword(.throws)))
+        
+        return try InitializerDeclSyntax(modifiers: modifiers, signature: signature) {
             if !lines.isEmpty && !customDecode.dropLast().isEmpty {
                 "let container = try decoder.container(keyedBy: CodingKeys.self)"
             }
@@ -206,8 +207,8 @@ public enum customCodable: ExtensionMacro, MemberMacro {
                 line.trimmed
             }
             
-            if let function: FunctionDeclSyntax = try declaration.memberBlock.members.compactMap({
-                guard let function = $0.as(MemberBlockItemSyntax.self)?.decl.as(FunctionDeclSyntax.self) else { return nil }
+            if let function: FunctionDeclSyntax = try declaration.memberBlock.members.compactMap({ (block: MemberBlockItemSyntax) -> FunctionDeclSyntax? in
+                guard let function = block.as(MemberBlockItemSyntax.self)?.decl.as(FunctionDeclSyntax.self) else { return nil }
                 guard function.name.isEqual(to: "postDecodeAction") else { return nil }
                 guard function.signature.effectSpecifiers?.asyncSpecifier == nil else {
                     throw DiagnosticsError("function `postDecodeAction` cannot be async", highlighting: function)

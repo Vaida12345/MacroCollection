@@ -143,8 +143,8 @@ public enum codable: ExtensionMacro, MemberMacro {
                 line
             }
             
-            if let function: FunctionDeclSyntax = try declaration.memberBlock.members.compactMap({
-                guard let function = $0.as(MemberBlockItemSyntax.self)?.decl.as(FunctionDeclSyntax.self) else { return nil }
+            if let function: FunctionDeclSyntax = try declaration.memberBlock.members.compactMap({ (block: MemberBlockItemSyntax) -> FunctionDeclSyntax? in
+                guard let function = block.as(MemberBlockItemSyntax.self)?.decl.as(FunctionDeclSyntax.self) else { return nil }
                 guard function.name.isEqual(to: "postDecodeAction") else { return nil }
                 guard function.signature.effectSpecifiers?.asyncSpecifier == nil else {
                     throw DiagnosticsError("function `postDecodeAction` cannot be async", highlighting: function)
