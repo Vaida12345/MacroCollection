@@ -31,6 +31,7 @@ public protocol DataProvider: Codable, Identifiable {
     /// The main ``DataProvider`` to work with.
     ///
     /// In the `@main App` declaration, declare a `StateObject` of `instance`. In this way, this structure can be accessed across the app, and any mutation is observed in all views.
+    @MainActor
     static var instance: Self { get set }
     
 }
@@ -46,7 +47,7 @@ extension DataProvider {
     
     /// Save the encoded provider to ``storageLocation`` using `.plist`.
     @inlinable
-    public func save() throws {
+    public nonisolated func save() throws {
         let encoder = PropertyListEncoder()
         encoder.outputFormat = .binary
         try encoder.encode(self).write(to: Self.storageLocation)
