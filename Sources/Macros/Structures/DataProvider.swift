@@ -50,6 +50,7 @@ extension DataProvider {
     public nonisolated func save() throws {
         let encoder = PropertyListEncoder()
         encoder.outputFormat = .binary
+        try FileManager.default.createDirectory(atPath: NSHomeDirectory() + "/Library/Application Support/DataProviders/", withIntermediateDirectories: true)
         try encoder.encode(self).write(to: Self.storageLocation)
     }
     
