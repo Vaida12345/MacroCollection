@@ -27,7 +27,7 @@ public enum encrypt: ExpressionMacro {
         let plainText = segment.content.text
         let key = SymmetricKey(size: .bits256)
         
-        let cipher = try ChaChaPoly.seal(plainText.data(using: .utf8)!, using: key).combined
+        let cipher = try AES.GCM.seal(plainText.data(using: .utf8)!, using: key).combined!
         
         return key.withUnsafeBytes { buffer in
             let _key = buffer.bindMemory(to: (UInt64, UInt64, UInt64, UInt64).self).baseAddress!.pointee

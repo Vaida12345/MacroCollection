@@ -224,7 +224,7 @@ public macro url(_ string: StaticString) -> URL = #externalMacro(module: "Macros
 ///
 /// Instead of storing the string, this macro would store the cipher text and decryption key in binary. Hence making it harder for users to find the sensitive info from the build product.
 ///
-/// In this implementation, `ChaChaPoly`, aka, `ChaCha20-Poly1305` cipher is used.
+/// In this implementation, `AES.GCM` cipher is used.
 ///
 /// ## Example
 ///

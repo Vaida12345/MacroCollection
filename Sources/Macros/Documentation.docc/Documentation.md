@@ -59,3 +59,4 @@ A set of macros offering compile time checking
 
 - ``symbol(_:)``
 - ``url(_:)``
+- ``encrypt(_:)``
