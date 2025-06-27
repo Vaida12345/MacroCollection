@@ -15,21 +15,23 @@ import SwiftCompilerPluginMessageHandling
 
 public enum memberwiseInitializable: MemberMacro {
     
-    public static func expansion(of node: SwiftSyntax.AttributeSyntax,
-                                 providingMembersOf declaration: some SwiftSyntax.DeclGroupSyntax,
-                                 in context: some SwiftSyntaxMacros.MacroExpansionContext
+    public static func expansion(
+        of node: SwiftSyntax.AttributeSyntax,
+        providingMembersOf declaration: some SwiftSyntax.DeclGroupSyntax,
+        conformingTo protocols: [TypeSyntax],
+        in context: some SwiftSyntaxMacros.MacroExpansionContext,
     ) throws -> [SwiftSyntax.DeclSyntax] {
-        let members = _memberwiseMap(for: declaration) { variable, variables, name, type -> CodeBlockItemSyntax? in
+        let members = declaration.mapProperties { variable, variables, name, type -> CodeBlockItemSyntax? in
             guard type != .computed && !type.isStatic && !((type == .staticConstant || type == .storedConstant) && variable.initializer != nil) else { return nil }
             return "self.\(raw: name) = \(raw: name)"
         }
         
         var allHaveInitializer = true
-        var parameters = try _memberwiseMap(for: declaration) { variable, decl, name, type -> FunctionParameterSyntax? in
+        var parameters = try declaration.mapProperties { variable, decl, name, type -> FunctionParameterSyntax? in
             guard type != .computed && !type.isStatic && !((type == .staticConstant || type == .storedConstant) && variable.initializer != nil) else { return nil }
             
             let firstName = variable.pattern.as(IdentifierPatternSyntax.self)!.identifier
-            let type = try _getType(for: variable, decl: decl, name: name, of: node)
+            let type = try variable.inferredType(in: decl)
             
             if variable.initializer == nil { allHaveInitializer = false }
             
@@ -45,7 +47,7 @@ public enum memberwiseInitializable: MemberMacro {
             for member in members {
                 member
             }
-        }.cast(DeclSyntax.self)
+        }
         
         var result: [SwiftSyntax.DeclSyntax] = []
         
@@ -68,9 +70,11 @@ public enum memberwiseInitializable: MemberMacro {
                 guard let decl = member.decl.as(InitializerDeclSyntax.self) else { return false }
                 return decl.signature.parameterClause.parameters.isEmpty
             }) {
-                result.append(try InitializerDeclSyntax("init()", bodyBuilder: {
-                    
-                }).cast(DeclSyntax.self))
+                try result.append {
+                    try InitializerDeclSyntax("init()") {
+                        
+                    }
+                }
             }
         }
         

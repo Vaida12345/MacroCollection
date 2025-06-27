@@ -10,6 +10,7 @@ import CryptoKit
 
 
 /// Helper function of `#encrypt` macro.
+@inlinable
 public func _encrypt_macro_decrypt(key: (UInt64, UInt64, UInt64, UInt64), cipher: Data) -> String {
     var key = key
     

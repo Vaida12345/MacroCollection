@@ -9,12 +9,12 @@
 import Foundation
 
 
-/// An option used within ``StratumMacros/encodeOptions(_:)``
+/// An option used within ``MacroCollection/encodeOptions(_:)``
 public enum AttributeEncodeOptions {
     
     /// Ignore the property.
     ///
-    /// This is the same as ``StratumMacros/encodeOptions(_:)``
+    /// This is the same as ``MacroCollection/encodeOptions(_:)``
     ///
     /// ### Usage
     /// This macro must be used within the ``codable()`` annotated class.

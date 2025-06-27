@@ -14,33 +14,34 @@ import SwiftDiagnostics
 
 public enum accessingAssociatedValues: ExtensionMacro {
     
-    public static func expansion(of node: SwiftSyntax.AttributeSyntax, 
-                                 attachedTo declaration: some SwiftSyntax.DeclGroupSyntax,
-                                 providingExtensionsOf type: some SwiftSyntax.TypeSyntaxProtocol,
-                                 conformingTo protocols: [SwiftSyntax.TypeSyntax],
-                                 in context: some SwiftSyntaxMacros.MacroExpansionContext
+    public static func expansion(
+        of node: SwiftSyntax.AttributeSyntax,
+        attachedTo declaration: some SwiftSyntax.DeclGroupSyntax,
+        providingExtensionsOf type: some SwiftSyntax.TypeSyntaxProtocol,
+        conformingTo protocols: [SwiftSyntax.TypeSyntax],
+        in context: some SwiftSyntaxMacros.MacroExpansionContext
     ) throws -> [SwiftSyntax.ExtensionDeclSyntax] {
         guard let declaration = declaration.as(EnumDeclSyntax.self) else {
-            throw DiagnosticsError.shouldRemoveMacro(for: declaration, node: node, message: "@codable should only be applied to `enum`")
+            throw DiagnosticsError.shouldRemoveMacro(attributes: declaration.attributes, node: node, message: "@codable should only be applied to `enum`")
         }
         
-        let enumMembers = declaration.memberBlock.members.flatMap { members in
-            let decl = members.decl.as(EnumCaseDeclSyntax.self)!
+        let needPublicModifier = declaration.modifiers.contains(where: { $0.name.tokenKind == .keyword(.public) })
+        let enumMembers = declaration.memberBlock.members.flatMap { member in
+            let decl = member.decl.as(EnumCaseDeclSyntax.self)!
             return decl.elements.map {
                 EnumMember(decl: decl, name: $0.name, parameterClause: $0.parameterClause)
             }
         }
-        
-        let modifiers = declaration.modifiers.filter({ $0.name.tokenKind == .keyword(.public) })
         
         let asFunction = try FunctionDeclSyntax("\(raw: asDocumentation)\nfunc `as`<T>(_ property: EnumProperty<T>) -> T?") {
             try SwitchExprSyntax("switch property.root") {
                 for member in enumMembers {
                     SwitchCaseSyntax("case .\(member.name):") {
                         if let args = member.args {
-                            "if case let .\(member.name)(\(raw: args.map{ $0.0.text }.joined(separator: ", "))) = self { return (\(raw: args.map{ $0.0.text }.joined(separator: ", "))) as? T }"
+                            let tuple = args.map{ $0.0.text.trimmingCharacters(in: .whitespaces) }.joined(separator: ", ")
+                            "if case let .\(member.name)(\(raw: tuple)) = self { return (\(raw: tuple)) as? T }"
                         } else {
-                            "if case .\(member.name) = self { return nil }"
+                            "if case .\(member.name) = self { return () as? T }"
                         }
                     }
                 }
@@ -61,11 +62,11 @@ public enum accessingAssociatedValues: ExtensionMacro {
             "return false"
         }
         
-        let propertyStruct = try StructDeclSyntax("\(raw: propertyStructDocumentation.replacingOccurrences(of: "``Model``", with: "``\(declaration.name.text)``"))\nstruct EnumProperty<T>") {
+        let propertyStruct = try StructDeclSyntax("\(raw: propertyStructDocumentation.replacingOccurrences(of: "``Model``", with: "``\(declaration.name.text)``"))\nstruct EnumProperty<T>: Sendable") {
             
             try EnumDeclSyntax("""
                            /// The cases used as an identifier to the property.
-                           fileprivate enum __Case
+                           fileprivate enum __Case: Sendable
                            """) {
                 "case \(raw: enumMembers.map(\.name).map(\.text).joined(separator: ", "))"
             }
@@ -81,14 +82,15 @@ public enum accessingAssociatedValues: ExtensionMacro {
             
             for member in enumMembers {
                 """
-                /// Indicates the value of ``\(declaration.name)/\(raw: member.caseName)``
-                static var \(member.name): EnumProperty<\(raw: member.type)> { EnumProperty<\(raw: member.type)>(root: .\(member.name)) }
+                /// Indicates the value of ``\(declaration.name.trimmed)/\(raw: member.caseName)``
+                \(raw: needPublicModifier ? "public" : "") static var \(member.name): EnumProperty<\(raw: member.type)> { EnumProperty<\(raw: member.type)>(root: .\(member.name)) }
                 """
             }
             
         }
         
-        return [ExtensionDeclSyntax(modifiers: modifiers, extendedType: IdentifierTypeSyntax(name: declaration.name)) {
+        return [ExtensionDeclSyntax(modifiers: [DeclModifierSyntax(name: needPublicModifier ? "public" : "")],
+                                    extendedType: IdentifierTypeSyntax(name: declaration.name)) {
             asFunction
             isFunction
             propertyStruct
@@ -105,7 +107,7 @@ public enum accessingAssociatedValues: ExtensionMacro {
         
         var args: [(TokenSyntax, TypeSyntax)]? {
             guard let parameterClause else { return nil }
-            return parameterClause.parameters.enumerated().map { (index, element) in (element.firstName ?? IdentifierTypeSyntax(name: .identifier("v\(index)")).cast(TokenSyntax.self), element.type) }
+            return parameterClause.parameters.enumerated().map { (index, element) in (element.firstName ?? TokenSyntax.identifier("v\(index)"), element.type) }
         }
         
         var rawArgs: [(TokenSyntax?, TypeSyntax)]? {
@@ -131,7 +133,7 @@ public enum accessingAssociatedValues: ExtensionMacro {
             if rawArgs.count == 1 {
                 return rawArgs[0].1.description
             } else {
-                return "(\(rawArgs.map(\.1.description).joined(separator: ", "))"
+                return "(\(rawArgs.map({ ($0.0.map({ "\($0):" }) ?? "") + "\($0.1)" }).joined(separator: ", ")))"
             }
         }
         
@@ -156,7 +158,7 @@ public enum accessingAssociatedValues: ExtensionMacro {
     ///
     /// The *casting* is considered successful if the case matches `property`, and returns the value associated with it.
     ///
-    /// If there isn't any value associated with `property`, this function would always return `nil`.
+    /// If there isn't any value associated with `property`, this function would always return `Void`.
     ///
     /// - SeeAlso: If you are not interested in the value associated with `property`, see ``is(_:)``.
     """
@@ -184,7 +186,7 @@ public enum accessingAssociatedValues: ExtensionMacro {
     static let propertyStructDocumentation: String = """
     /// Auto generated type to access properties for ``Model``.
     ///
-    /// - Important: Please do not interact with this structure directly.
+    /// You can use the static properties to retrieve enum cases.
     """
     
     

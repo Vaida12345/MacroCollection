@@ -12,11 +12,8 @@ struct NucleusMacrosPlugin: CompilerPlugin {
         url.self,
         symbol.self,
         accessingAssociatedValues.self,
-        dataProviding.self,
-        providedBy.self,
         environment.self,
         encodeOptions.self,
-        customCodable.self,
         encrypt.self
     ]
 }

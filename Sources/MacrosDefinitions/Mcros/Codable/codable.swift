@@ -15,49 +15,38 @@ import MacroEssentials
 
 public enum codable: ExtensionMacro, MemberMacro {
     
-    
-    public static func expansion(of node: SwiftSyntax.AttributeSyntax, 
-                                 providingMembersOf declaration: some SwiftSyntax.DeclGroupSyntax,
-                                 in context: some SwiftSyntaxMacros.MacroExpansionContext
-    ) throws -> [SwiftSyntax.DeclSyntax] {
+    public static func expansion(
+        of node: AttributeSyntax,
+        providingMembersOf declaration: some DeclGroupSyntax,
+        conformingTo protocols: [TypeSyntax],
+        in context: some MacroExpansionContext
+    ) throws -> [DeclSyntax] {
         guard declaration.is(StructDeclSyntax.self) || declaration.is(ClassDeclSyntax.self) else { return [] } // let the other expand handle the throwing.
-        guard !_has(attribute: "customCodable", declaration: declaration) else { return [] }
-        
-        let memberwiseInitializer = try memberwiseInitializable.expansion(of: node, providingMembersOf: declaration, in: context)
-        
-        return if let line = try generateDecode(of: node, providingMembersOf: declaration, in: context) {
-            [line.cast(DeclSyntax.self)] + memberwiseInitializer
-        } else {
-            memberwiseInitializer
-        }
+        return try generateDecode(of: node, providingMembersOf: declaration, in: context).map { [DeclSyntax($0)] } ?? []
     }
     
     
-    public static func expansion(of node: SwiftSyntax.AttributeSyntax,
-                                 attachedTo declaration: some SwiftSyntax.DeclGroupSyntax,
-                                 providingExtensionsOf type: some SwiftSyntax.TypeSyntaxProtocol,
-                                 conformingTo protocols: [SwiftSyntax.TypeSyntax],
-                                 in context: some SwiftSyntaxMacros.MacroExpansionContext
+    public static func expansion(
+        of node: SwiftSyntax.AttributeSyntax,
+        attachedTo declaration: some SwiftSyntax.DeclGroupSyntax,
+        providingExtensionsOf type: some SwiftSyntax.TypeSyntaxProtocol,
+        conformingTo protocols: [SwiftSyntax.TypeSyntax],
+        in context: some SwiftSyntaxMacros.MacroExpansionContext
     ) throws -> [SwiftSyntax.ExtensionDeclSyntax] {
         guard declaration.is(StructDeclSyntax.self) || declaration.is(ClassDeclSyntax.self) else {
-            throw DiagnosticsError.shouldRemoveMacro(for: declaration, node: node, message: "@codable should only be applied to `struct` or `class`")
+            throw DiagnosticsError.shouldRemoveMacro(attributes: declaration.attributes, node: node, message: "@codable should only be applied to `struct` or `class`")
         }
         
-        guard !_has(attribute: "customCodable", declaration: declaration) else {
-            throw DiagnosticsError.shouldRemoveMacro(for: declaration, node: node, message: "@codable is obsolete when used with `customCodable`")
-        }
-        
-        let shouldDeclareInheritance = !_has(inheritance: "Codable", declaration: declaration)
-        
-        return try [ExtensionDeclSyntax("extension \(type)\(raw: shouldDeclareInheritance ? ": Codable" : "")") {
+        return try [ExtensionDeclSyntax("extension \(type)\(raw: !declaration.conformances.contains("Codable") ? ": Codable" : "")") {
             if let line = try generateCodingKeys(of: node, providingMembersOf: declaration, in: context) { .init(leadingTrivia: .newlines(2), decl: line, trailingTrivia: .newlines(2)) }
             if let line = try generateEncode(of: node, providingMembersOf: declaration, in: context) { .init(decl: line) }
         }]
     }
     
-    static func generateEncode(of node: SwiftSyntax.AttributeSyntax,
-                               providingMembersOf declaration: some SwiftSyntax.DeclGroupSyntax,
-                               in context: some SwiftSyntaxMacros.MacroExpansionContext
+    static func generateEncode(
+        of node: SwiftSyntax.AttributeSyntax,
+        providingMembersOf declaration: some SwiftSyntax.DeclGroupSyntax,
+        in context: some SwiftSyntaxMacros.MacroExpansionContext
     ) throws -> FunctionDeclSyntax? {
         guard !declaration.memberBlock.members.contains(where: { member in
             guard let member = member.decl.as(FunctionDeclSyntax.self),
@@ -76,7 +65,7 @@ public enum codable: ExtensionMacro, MemberMacro {
                     try container.encodeIfPresent(self.\(raw: name), forKey: .\(raw: name))
                 }
                 """
-            } else if try additionalInfo.encodeOptionalAsIfPresent && _getType(for: variable, decl: decl, name: name, of: node).isOptional {
+            } else if try additionalInfo.encodeOptionalAsIfPresent && variable.inferredType(in: decl).isOptional {
                 syntax = "try container.encodeIfPresent(self.\(raw: name), forKey: .\(raw: name))"
             } else {
                 syntax = "try container.encode(self.\(raw: name), forKey: .\(raw: name))"
@@ -88,7 +77,7 @@ public enum codable: ExtensionMacro, MemberMacro {
         return FunctionDeclSyntax(modifiers: declaration.modifiers.filter({ $0.name.tokenKind == .keyword(.public) || $0.name.tokenKind == .keyword(.open) }),
                                   name: "encode",
                                   signature: .init(parameterClause: .init(parameters: .init([.init(firstName: "to", secondName: "encoder", type: .identifier("Encoder"))])),
-                                                   effectSpecifiers: .init(throwsSpecifier: .keyword(.throws)))) {
+                                                   effectSpecifiers: .throws)) {
             if !lines.isEmpty {
                 "var container = encoder.container(keyedBy: CodingKeys.self)"
             }
@@ -99,9 +88,10 @@ public enum codable: ExtensionMacro, MemberMacro {
         }
     }
     
-    static func generateDecode(of node: SwiftSyntax.AttributeSyntax,
-                               providingMembersOf declaration: some SwiftSyntax.DeclGroupSyntax,
-                               in context: some SwiftSyntaxMacros.MacroExpansionContext
+    static func generateDecode(
+        of node: SwiftSyntax.AttributeSyntax,
+        providingMembersOf declaration: some SwiftSyntax.DeclGroupSyntax,
+        in context: some SwiftSyntaxMacros.MacroExpansionContext
     ) throws -> InitializerDeclSyntax? {
         guard !declaration.memberBlock.members.contains(where: { member in
             guard let member = member.decl.as(InitializerDeclSyntax.self) else { return false }
@@ -112,13 +102,14 @@ public enum codable: ExtensionMacro, MemberMacro {
         
         let lines = try memberwiseMap(for: declaration) { variable, decl, name, additionalInfo in
             let syntax: CodeBlockItemSyntax
+            let type = try variable.inferredType(in: decl)
             
             if additionalInfo.encodeIfNoneDefault, let defaultValue = additionalInfo.defaultValue {
-                syntax = "self.\(raw: name) = try container.decodeIfPresent(forKey: .\(raw: name)) ?? \(raw: defaultValue)"
-            } else if try additionalInfo.encodeOptionalAsIfPresent && _getType(for: variable, decl: decl, name: name, of: node).isOptional {
-                syntax = "self.\(raw: name) = try container.decodeIfPresent(forKey: .\(raw: name))"
+                syntax = "self.\(raw: name) = try container.decodeIfPresent(\(type).self, forKey: .\(raw: name)) ?? \(raw: defaultValue)"
+            } else if try additionalInfo.encodeOptionalAsIfPresent && variable.inferredType(in: decl).isOptional {
+                syntax = "self.\(raw: name) = try container.decodeIfPresent(\(type).self, forKey: .\(raw: name))"
             } else {
-                syntax = "self.\(raw: name) = try container.decode(forKey: .\(raw: name))"
+                syntax = "self.\(raw: name) = try container.decode(\(type).self, forKey: .\(raw: name))"
             }
             
             return syntax
@@ -134,7 +125,7 @@ public enum codable: ExtensionMacro, MemberMacro {
         
         return try InitializerDeclSyntax(modifiers: modifiers,
                                          signature: .init(parameterClause: .init(parameters: .init([.init(firstName: "from", secondName: "decoder", type: .identifier("Decoder"))])),
-                                                          effectSpecifiers: .init(throwsSpecifier: .keyword(.throws)))) {
+                                                          effectSpecifiers: .throws)) {
             if !lines.isEmpty {
                 "let container = try decoder.container(keyedBy: CodingKeys.self)"
             }
@@ -144,14 +135,14 @@ public enum codable: ExtensionMacro, MemberMacro {
             }
             
             if let function: FunctionDeclSyntax = try declaration.memberBlock.members.compactMap({ (block: MemberBlockItemSyntax) -> FunctionDeclSyntax? in
-                guard let function = block.as(MemberBlockItemSyntax.self)?.decl.as(FunctionDeclSyntax.self) else { return nil }
+                guard let function = block.decl.as(FunctionDeclSyntax.self) else { return nil }
                 guard function.name.isEqual(to: "postDecodeAction") else { return nil }
                 guard function.signature.effectSpecifiers?.asyncSpecifier == nil else {
                     throw DiagnosticsError("function `postDecodeAction` cannot be async", highlighting: function)
                 }
                 return function
             }).first {
-                let hasTry = function.signature.effectSpecifiers?.throwsSpecifier != nil
+                let hasTry = function.signature.effectSpecifiers?.throwsClause?.throwsSpecifier != nil
                 let isStatic = function.modifiers.contains(where: { $0.name.tokenKind == .keyword(.static) })
                 
                 "\(raw: hasTry ? "try " : "")\(raw: isStatic ? "Self" : "self").postDecodeAction()"
@@ -159,9 +150,10 @@ public enum codable: ExtensionMacro, MemberMacro {
         }
     }
     
-    static func generateCodingKeys(of node: SwiftSyntax.AttributeSyntax,
-                                   providingMembersOf declaration: some SwiftSyntax.DeclGroupSyntax,
-                                   in context: some SwiftSyntaxMacros.MacroExpansionContext
+    static func generateCodingKeys(
+        of node: SwiftSyntax.AttributeSyntax,
+        providingMembersOf declaration: some SwiftSyntax.DeclGroupSyntax,
+        in context: some SwiftSyntaxMacros.MacroExpansionContext
     ) throws -> EnumDeclSyntax? {
         guard !declaration.memberBlock.members.contains(where: { member in
             guard let member = member.decl.as(EnumDeclSyntax.self),
@@ -181,11 +173,11 @@ public enum codable: ExtensionMacro, MemberMacro {
                               memberBlock: MemberBlockSyntax(members: MemberBlockItemListSyntax(members)))
     }
     
-    static func memberwiseMap<T>(for declaration: some SwiftSyntax.DeclGroupSyntax,
-                                              handler: (_ variable: PatternBindingListSyntax.Element, _ decl: VariableDeclSyntax, _ name: String, _ additionalInfo: AdditionalInfo) throws -> T?
+    static func memberwiseMap<T>(
+        for declaration: some SwiftSyntax.DeclGroupSyntax,
+        handler: (_ variable: PatternBindingListSyntax.Element, _ decl: VariableDeclSyntax, _ name: String, _ additionalInfo: AdditionalInfo) throws -> T?
     ) rethrows -> [T] {
-        return try _memberwiseMap(for: declaration) { variable, decl, name, type in
-            
+        return try declaration.mapProperties { variable, decl, name, type in
             guard type != .computed && !type.isStatic && !((type == .staticConstant || type == .storedConstant) && variable.initializer != nil) else { return nil }
             
             var isIgnored = false
@@ -205,7 +197,7 @@ public enum codable: ExtensionMacro, MemberMacro {
                             if memberName == "ignored" {
                                 isIgnored = true
                             } else if memberName == "encodeIfPresent" {
-                                if try !_getType(for: variable, decl: decl, name: name, of: variable).isOptional {
+                                if try !variable.inferredType(in: decl).isOptional {
                                     warnNonNilEncodeIfPresent = true
                                 } else {
                                     additionalInfo.encodeOptionalAsIfPresent = true
@@ -259,7 +251,7 @@ public enum codable: ExtensionMacro, MemberMacro {
                                         args.remove(at: encodeIfPresentArg)
                                         args[args.index(before: encodeIfPresentArg)].trailingComma = nil
                                         attribute.arguments = args.as(AttributeSyntax.Arguments.self)
-                                        return attribute.as(AttributeListSyntax.Element.self)!
+                                        return .attribute(attribute)
                                     }
                                 }
                             }

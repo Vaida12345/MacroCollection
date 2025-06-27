@@ -1,20 +1,20 @@
-// swift-tools-version: 6.0
+// swift-tools-version: 6.1
 // The swift-tools-version declares the minimum version of Swift required to build this package.
 
 import PackageDescription
 import CompilerPluginSupport
 
 let package = Package (
-    name: "StratumMacros",
+    name: "MacroCollection",
     platforms: [
         .macOS(.v13),
         .iOS(.v16),
         .watchOS(.v9),
         .tvOS(.v16)
     ], products: [
-        .library(name: "StratumMacros", targets: ["StratumMacros"])
+        .library(name: "MacroCollection", targets: ["MacroCollection"])
     ], dependencies: [
-        .package(url: "https://github.com/apple/swift-syntax.git", from: "509.0.0"),
+        .package(url: "https://github.com/apple/swift-syntax.git", from: "601.0.0"),
         .package(name: "MacroEssentials",
                  path: "~/Library/Mobile Documents/com~apple~CloudDocs/DataBase/Projects/Packages/MacroEssentials")
     ], targets: [
@@ -25,10 +25,10 @@ let package = Package (
                 .product(name: "SwiftSyntaxBuilder", package: "swift-syntax"),
                 "MacroEssentials"
                ]),
-        .target(name: "StratumMacros", dependencies: ["MacrosDefinitions"], path: "Sources/Macros"),
+        .target(name: "MacroCollection", dependencies: ["MacrosDefinitions"], path: "Sources/Macros"),
         
         // A client of the library, which is able to use the macro in its own code.
-        .executableTarget(name: "macroClient", dependencies: ["StratumMacros"]),
+        .executableTarget(name: "macroClient", dependencies: ["MacroCollection"]),
 
         // A test target used to develop the macro implementation.
         .testTarget(

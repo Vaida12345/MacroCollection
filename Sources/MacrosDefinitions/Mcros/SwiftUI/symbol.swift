@@ -16,7 +16,7 @@ public enum symbol: ExpressionMacro {
     public static func expansion(of node: some SwiftSyntax.FreestandingMacroExpansionSyntax,
                                  in context: some SwiftSyntaxMacros.MacroExpansionContext
     ) throws -> SwiftSyntax.ExprSyntax {
-        guard let argument = node.argumentList.first?.expression,
+        guard let argument = node.arguments.first?.expression,
               let segments = argument.as(StringLiteralExprSyntax.self)?.segments,
               segments.count == 1,
               case .stringSegment(let segment)? = segments.first
@@ -25,7 +25,6 @@ public enum symbol: ExpressionMacro {
         }
         
         let name = segment.content.text
-        print(name)
         
 #if canImport(UIKit)
         guard UIImage(systemName: name) != nil else { throw MacroError.noSuchSymbol(name) }

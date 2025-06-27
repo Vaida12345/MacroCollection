@@ -16,7 +16,7 @@ public enum transient: PeerMacro {
                                  providingPeersOf declaration: some SwiftSyntax.DeclSyntaxProtocol,
                                  in context: some SwiftSyntaxMacros.MacroExpansionContext
     ) throws -> [SwiftSyntax.DeclSyntax] {
-        [] // the macro itself does nothing
+        try encodeOptions.expansion(of: node, providingPeersOf: declaration, in: context) // check if the macro should be removed.
     }
     
 }

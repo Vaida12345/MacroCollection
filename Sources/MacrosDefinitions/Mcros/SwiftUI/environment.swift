@@ -20,13 +20,13 @@ public enum environment: DeclarationMacro {
     public static func expansion(of node: some SwiftSyntax.FreestandingMacroExpansionSyntax, 
                                  in context: some SwiftSyntaxMacros.MacroExpansionContext
     ) throws -> [SwiftSyntax.DeclSyntax] {
-        let nodes: [SwiftSyntax.DeclSyntax] = node.as(MacroExpansionDeclSyntax.self)!.arguments.compactMap {
+        let nodes: [SwiftSyntax.DeclSyntax] = node.as(MacroExpansionExprSyntax.self)!.arguments.compactMap {
             guard let identifier = $0.expression.as(KeyPathExprSyntax.self)?.components.last?.component else { return nil }
             return DeclSyntax("@Environment(\\.\(identifier)) private var \(identifier)")
         }
         
         guard nodes.isEmpty else { return nodes }
-        return node.as(MacroExpansionDeclSyntax.self)!.arguments.compactMap {
+        return node.as(MacroExpansionExprSyntax.self)!.arguments.compactMap {
             guard let identifier = $0.expression.as(MemberAccessExprSyntax.self)?.base else { return nil }
             return DeclSyntax("@Environment(\(raw: identifier.description).self) private var \(raw: identifier.description.frontToLower())")
         }
