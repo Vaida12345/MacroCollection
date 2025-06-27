@@ -14,9 +14,8 @@ let package = Package (
     ], products: [
         .library(name: "MacroCollection", targets: ["MacroCollection"])
     ], dependencies: [
-        .package(url: "https://github.com/apple/swift-syntax.git", from: "601.0.0"),
-        .package(name: "MacroEssentials",
-                 path: "~/Library/Mobile Documents/com~apple~CloudDocs/DataBase/Projects/Packages/MacroEssentials")
+        .package(url: "https://www.github.com/apple/swift-syntax.git", from: "601.0.0"),
+        .package(url: "https://www.github.com/Vaida12345/MacroEssentials", from: "1.0.0")
     ], targets: [
         .macro(name: "MacrosDefinitions",
                dependencies: [
