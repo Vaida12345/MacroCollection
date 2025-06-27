@@ -1,5 +1,6 @@
 name: DocC
 on:
+  workflow_dispatch:
   release:
     types:
       - created
