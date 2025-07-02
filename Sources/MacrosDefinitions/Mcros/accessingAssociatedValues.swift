@@ -12,15 +12,14 @@ import SwiftSyntaxBuilder
 import SwiftDiagnostics
 
 
-public enum accessingAssociatedValues: ExtensionMacro {
+public enum accessingAssociatedValues: MemberMacro {
     
     public static func expansion(
-        of node: SwiftSyntax.AttributeSyntax,
-        attachedTo declaration: some SwiftSyntax.DeclGroupSyntax,
-        providingExtensionsOf type: some SwiftSyntax.TypeSyntaxProtocol,
-        conformingTo protocols: [SwiftSyntax.TypeSyntax],
-        in context: some SwiftSyntaxMacros.MacroExpansionContext
-    ) throws -> [SwiftSyntax.ExtensionDeclSyntax] {
+        of node: AttributeSyntax,
+        providingMembersOf declaration: some DeclGroupSyntax,
+        conformingTo protocols: [TypeSyntax],
+        in context: some MacroExpansionContext
+    ) throws -> [DeclSyntax] {
         guard let declaration = declaration.as(EnumDeclSyntax.self) else {
             throw DiagnosticsError.shouldRemoveMacro(attributes: declaration.attributes, node: node, message: "@codable should only be applied to `enum`")
         }
@@ -89,12 +88,11 @@ public enum accessingAssociatedValues: ExtensionMacro {
             
         }
         
-        return [ExtensionDeclSyntax(modifiers: [DeclModifierSyntax(name: needPublicModifier ? "public" : "")],
-                                    extendedType: IdentifierTypeSyntax(name: declaration.name)) {
-            asFunction
-            isFunction
-            propertyStruct
-        }]
+        return [
+            DeclSyntax(asFunction),
+            DeclSyntax(isFunction),
+            DeclSyntax(propertyStruct)
+        ]
     }
     
     struct EnumMember {

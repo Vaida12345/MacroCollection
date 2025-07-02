@@ -37,9 +37,7 @@ final class AssociatedTests: XCTestCase {
              case bus(length: Int)
              case bus2(Int)
              case bus3(Int, Int)
-         }
          
-         public extension Model {
              /// Returns the value associated with `property`, if the case matches.
              ///
              /// This method can be considered as an alternative to `if case let`.
@@ -86,6 +84,7 @@ final class AssociatedTests: XCTestCase {
                  }
                  return nil
              }
+         
              /// Returns whether the given case matches `property`.
              ///
              /// This method can be considered as an alternative to `if case`.
@@ -128,6 +127,7 @@ final class AssociatedTests: XCTestCase {
                  }
                  return false
              }
+         
              /// Auto generated type to access properties for ``Model``.
              ///
              /// You can use the static properties to retrieve enum cases.

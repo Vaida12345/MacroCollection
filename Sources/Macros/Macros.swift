@@ -216,7 +216,7 @@ public macro symbol(_ name: StaticString) -> String = #externalMacro(module: "Ma
 /// ```
 ///
 /// The `as(_:)` would returns the associated value if the case matches and there is any, while `is(_:)` would return a `Bool` determining whether the case matches.
-@attached(extension, names: named(as(_:)), named(is(_:)), named(EnumProperty))
+@attached(member, names: named(as(_:)), named(is(_:)), named(EnumProperty))
 public macro accessingAssociatedValues() = #externalMacro(module: "MacrosDefinitions", type: "accessingAssociatedValues")
 
 
