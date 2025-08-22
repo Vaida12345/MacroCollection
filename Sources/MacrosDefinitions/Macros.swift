@@ -4,7 +4,7 @@ import SwiftSyntaxBuilder
 import SwiftSyntaxMacros
 
 @main
-struct NucleusMacrosPlugin: CompilerPlugin {
+struct MacrosPlugin: CompilerPlugin {
     let providingMacros: [Macro.Type] = [
         codable.self,
         memberwiseInitializable.self,
