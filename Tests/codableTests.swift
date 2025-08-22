@@ -11,7 +11,7 @@ import SwiftSyntaxMacrosTestSupport
 import XCTest
 @testable import MacrosDefinitions
 
-fileprivate let testMacros: [String: any Macro.Type] = [
+nonisolated(unsafe) fileprivate let testMacros: [String: any Macro.Type] = [
     "codable": codable.self,
     "encodeOptions": encodeOptions.self,
     "transient": transient.self
