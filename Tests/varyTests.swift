@@ -19,7 +19,7 @@ nonisolated(unsafe) fileprivate let testMacros: [String: any Macro.Type] = [
 
 final class VaryTests: XCTestCase {
     
-    func testExample() async throws {
+    func testSingle() async throws {
         let source = """
             @varyArgumentType(String.self, variation: Int.self)
             func a(input: String) {
@@ -33,6 +33,53 @@ final class VaryTests: XCTestCase {
             }
             
             func a(input: Int) {
+            
+            }
+            """
+        
+        assertMacroExpansion(source, expandedSource: expected, macros: testMacros)
+    }
+    
+    func testInit() async throws {
+        let source = """
+            @varyArgumentType(String.self, variation: Int.self)
+            init(input: String) {
+            
+            }
+            """
+        let expected = """
+            
+            init(input: String) {
+            
+            }
+            
+            init(input: Int) {
+            
+            }
+            """
+        
+        assertMacroExpansion(source, expandedSource: expected, macros: testMacros)
+    }
+    
+    func testMultiple() async throws {
+        let source = """
+            @varyArgumentType(String.self, variation: Int.self)
+            @varyArgumentType(String.self, variation: Bool.self)
+            func a(input: String) {
+                
+            }
+            """
+        let expected = """
+            
+            func a(input: String) {
+                
+            }
+            
+            func a(input: Int) {
+            
+            }
+            
+            func a(input: Bool) {
             
             }
             """
