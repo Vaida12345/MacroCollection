@@ -251,3 +251,27 @@ public macro environment<each Value>(_ contents: repeat KeyPath<EnvironmentValue
 @available(macOS 14.0, iOS 17.0, tvOS 17.0, watchOS 10.0, *)
 public macro environment<each Value>(_ contents: repeat (each Value).Type) = #externalMacro(module: "MacrosDefinitions", type: "environment") where repeat each Value: Observable
 #endif
+
+
+/// Shorthand for creating a peer function that shares the same body, but different function signature.
+///
+/// - Remark: Please only use this in situations where generics cannot suffice.
+///
+/// This macro creates a copy of the declaration it is attached to, and creates a variation differs by argument type.
+/// ```swift
+/// @varyArgumentType(String.self, variation: Int.self)
+/// func a(input: String) {
+///     // do something with input
+/// }
+/// ```
+///
+/// When expanded, a copy is inserted.
+/// ```swift
+/// func a(input: Int) {
+///     // do something with input
+/// }
+/// ```
+///
+/// The body for these two functions are exactly the same.
+@attached(peer, names: arbitrary)
+public macro varyArgumentType<T, U>(_ sourceType: T.Type, variation: U.Type) = #externalMacro(module: "MacrosDefinitions", type: "varyArgumentType")

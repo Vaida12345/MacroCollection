@@ -14,6 +14,7 @@ struct MacrosPlugin: CompilerPlugin {
         accessingAssociatedValues.self,
         environment.self,
         encodeOptions.self,
-        encrypt.self
+        encrypt.self,
+        varyArgumentType.self
     ]
 }
