@@ -47,7 +47,10 @@ public enum varyArgumentType: PeerMacro {
         }
         
         var decl = declaration
-        decl.attributes.remove(at: decl.attributes.firstIndex(where: { $0.as(AttributeSyntax.self)?.attributeName.description == "varyArgumentType" })!)
+        while let index = decl.attributes.firstIndex(where: { $0.as(AttributeSyntax.self)?.attributeName.description == "varyArgumentType" }) {
+            decl.attributes.remove(at: index)
+        }
+        
         decl.signature.parameterClause.parameters = parameters
         return [DeclSyntax(decl)]
     }
