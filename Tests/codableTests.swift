@@ -24,7 +24,7 @@ final class CodableTests: XCTestCase {
         assertMacroExpansion(
              """
             @codable
-            final class Cat {
+            struct Cat {
             
                 let name: String
             
@@ -38,7 +38,7 @@ final class CodableTests: XCTestCase {
             }
             """,
              expandedSource: """
-            final class Cat {
+            struct Cat {
             
                 let name: String
             
@@ -50,7 +50,7 @@ final class CodableTests: XCTestCase {
                     self.name = name
                 }
             
-                required init(from decoder: Decoder) throws {
+                init(from decoder: Decoder) throws {
                     let container = try decoder.container(keyedBy: CodingKeys.self)
                     self.name = try container.decode(String.self, forKey: .name)
                     try self.postDecodeAction()
@@ -77,18 +77,18 @@ final class CodableTests: XCTestCase {
         assertMacroExpansion(
              """
             @codable
-            final class Cat {
+            struct Cat {
             
                 let name: String = ""
             
             }
             """,
              expandedSource: """
-            final class Cat {
+            struct Cat {
             
                 let name: String = ""
             
-                required init(from decoder: Decoder) throws {
+                init(from decoder: Decoder) throws {
                 }
             
             }
@@ -110,14 +110,14 @@ final class CodableTests: XCTestCase {
         assertMacroExpansion(
              """
             @codable
-            final class Cat {
+            struct Cat {
             
                 var name = function()
             
             }
             """,
              expandedSource: """
-            final class Cat {
+            struct Cat {
             
                 var name = function()
             
@@ -156,7 +156,7 @@ final class CodableTests: XCTestCase {
         assertMacroExpansion(
              """
             @codable
-            final class Cat {
+            struct Cat {
             
                 @transient
                 var name: String = ""
@@ -164,7 +164,7 @@ final class CodableTests: XCTestCase {
             }
             """,
              expandedSource: """
-            final class Cat {
+            struct Cat {
                 var name: String = ""
             
                 required init(from decoder: Decoder) throws {
@@ -189,7 +189,7 @@ final class CodableTests: XCTestCase {
         assertMacroExpansion(
              """
             @codable
-            final class Cat {
+            struct Cat {
             
                 @encodeOptions(.ignored)
                 var name: String = ""
@@ -197,10 +197,10 @@ final class CodableTests: XCTestCase {
             }
             """,
              expandedSource: """
-            final class Cat {
+            struct Cat {
                 var name: String = ""
             
-                required init(from decoder: Decoder) throws {
+                init(from decoder: Decoder) throws {
                 }
             
             }
@@ -336,6 +336,47 @@ final class CodableTests: XCTestCase {
             }
             """,
              macros: testMacros
+        )
+    }
+    
+    func testOverride() {
+        assertMacroExpansion(
+            """
+            @codable(.override)
+            class Child: Super {
+            
+                let b: String
+            
+            }
+            """,
+            expandedSource: """
+                class Child: Super {
+                
+                    let b: String
+                
+                    required init(from decoder: Decoder) throws {
+                        let container = try decoder.container(keyedBy: CodingKeys.self)
+                        self.b = try container.decode(String.self, forKey: .b)
+                        try super.init(from: decoder)
+                    }
+                
+                    override func encode(to encoder: Encoder) throws {
+                        try super.encode(to: encoder)
+                        var container = encoder.container(keyedBy: CodingKeys.self)
+                        try container.encode(self.b, forKey: .b)
+                    }
+                
+                }
+                
+                extension Child {
+                
+                    enum CodingKeys: CodingKey {
+                        case b
+                    }
+                
+                }
+                """,
+            macros: testMacros
         )
     }
 }

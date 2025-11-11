@@ -55,13 +55,78 @@ import Foundation
 ///
 /// A backdoor was made for function with signature `static? func postDecodeAction() throws?`. Such function will be appended to the end of generated decode implementation if present.
 ///
+/// - Parameters:
+///   - options: Options for encoding and decoding, see ``CodableOptions``.
+///
+/// ## Topics
+///
+/// ### Controlling Encode
+/// - ``transient()``
+/// - ``encodeOptions(_:)``
+/// - ``CodableOptions``
+@attached(extension, conformances: Codable, names: named(encode(to:)), named(CodingKeys))
+@attached(member, names: named(init), named(encode(to:)), named(CodingKeys))
+public macro codable(_ options: CodableOptions...) = #externalMacro(module: "MacrosDefinitions", type: "codable")
+
+
+/// Generates the methods required by `Codable` for the stored properties.
+///
+/// Apply this macro to a class to generate memberwise codable conformances.
+/// ```swift
+/// @codable
+/// class Cat {
+///     let name: String = "cat"
+///     let age: Int
+/// }
+/// ```
+///
+/// This above macro would expand to the following:
+/// ```swift
+/// enum CodingKeys: CodingKey { ... }
+/// func encode(to encoder: Encoder) throws { ... }
+/// required init(from decoder: Decoder) throws { ... }
+/// ```
+///
+/// Please note that any non-assignable values are ignored.
+///
+/// ## Transient values
+/// To ignore value explicitly, use the ``transient()`` macro.
+/// ```swift
+/// @codable
+/// class Cat {
+///     let name: String
+///
+///     @transient
+///     let age: Int
+/// }
+/// ```
+///
+/// In the generated `CodingKeys`, the `transient()` annotated property `age` is ignored.
+/// ```swift
+/// enum CodingKeys: CodingKey {
+///     case name
+/// }
+/// ```
+///
+/// The other generated codes are updated according.
+///
+/// ## Additional Options
+///
+/// There are a few other options that can be accessed using ``encodeOptions(_:)``. For a list of options, see ``AttributeEncodeOptions``.
+///
+/// A backdoor was made for function with signature `static? func postDecodeAction() throws?`. Such function will be appended to the end of generated decode implementation if present.
+///
+/// ## Codable with Options.
+///
+/// Sometimes you have to specify additional coding options to compile properly. For example, you can use the ``CodableOptions/override`` to encode and decode a child class.
+///
 /// ## Topics
 ///
 /// ### Controlling Encode
 /// - ``transient()``
 /// - ``encodeOptions(_:)``
 @attached(extension, conformances: Codable, names: named(encode(to:)), named(CodingKeys))
-@attached(member, names: named(init))
+@attached(member, names: named(init), named(encode(to:)), named(CodingKeys))
 public macro codable() = #externalMacro(module: "MacrosDefinitions", type: "codable")
 
 

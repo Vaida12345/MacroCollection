@@ -15,6 +15,19 @@ import MacroEssentials
 
 public enum codable: ExtensionMacro, MemberMacro {
     
+    static func hasOverride(declaration: some DeclGroupSyntax) -> Bool {
+        guard let decl = declaration.as(ClassDeclSyntax.self) else { return false }
+        return decl.attributes.contains(where: { attribute in
+            guard case .attribute(let attribute) = attribute else { return false }
+            guard attribute.attributeName.as(IdentifierTypeSyntax.self)?.name.isEqual(to: "codable") ?? false else { return false }
+            guard let args = attribute.arguments else { return false }
+            return args.children(viewMode: .sourceAccurate).contains { syntax in
+                guard let expr = syntax.as(LabeledExprSyntax.self)?.expression.as(MemberAccessExprSyntax.self) else { return false }
+                return expr.declName.baseName.isEqual(to: "override")
+            }
+        })
+    }
+    
     public static func expansion(
         of node: AttributeSyntax,
         providingMembersOf declaration: some DeclGroupSyntax,
@@ -22,7 +35,16 @@ public enum codable: ExtensionMacro, MemberMacro {
         in context: some MacroExpansionContext
     ) throws -> [DeclSyntax] {
         guard declaration.is(StructDeclSyntax.self) || declaration.is(ClassDeclSyntax.self) else { return [] } // let the other expand handle the throwing.
-        return try generateDecode(of: node, providingMembersOf: declaration, in: context).map { [DeclSyntax($0)] } ?? []
+        
+        var result: [DeclSyntax] = []
+        if let decode = try generateDecode(of: node, providingMembersOf: declaration, in: context) {
+            result.append(decode)
+        }
+        if declaration.is(ClassDeclSyntax.self), let encode = try generateEncode(of: node, providingMembersOf: declaration, in: context) {
+            result.append(encode)
+        }
+        
+        return result
     }
     
     
@@ -37,9 +59,11 @@ public enum codable: ExtensionMacro, MemberMacro {
             throw DiagnosticsError.shouldRemoveMacro(attributes: declaration.attributes, node: node, message: "@codable should only be applied to `struct` or `class`")
         }
         
-        return try [ExtensionDeclSyntax("extension \(type)\(raw: !declaration.conformances.contains("Codable") ? ": Codable" : "")") {
+        let hasOverride = hasOverride(declaration: declaration)
+        
+        return try [ExtensionDeclSyntax("extension \(type)\(raw: !declaration.conformances.contains("Codable") && !hasOverride ? ": Codable" : "")") {
             if let line = try generateCodingKeys(of: node, providingMembersOf: declaration, in: context) { .init(leadingTrivia: .newlines(2), decl: line, trailingTrivia: .newlines(2)) }
-            if let line = try generateEncode(of: node, providingMembersOf: declaration, in: context) { .init(decl: line) }
+            if !declaration.is(ClassDeclSyntax.self), let line = try generateEncode(of: node, providingMembersOf: declaration, in: context) { .init(decl: line) }
         }]
     }
     
@@ -74,10 +98,23 @@ public enum codable: ExtensionMacro, MemberMacro {
             return syntax
         }
         
-        return FunctionDeclSyntax(modifiers: declaration.modifiers.filter({ $0.name.tokenKind == .keyword(.public) || $0.name.tokenKind == .keyword(.open) }),
-                                  name: "encode",
-                                  signature: .init(parameterClause: .init(parameters: .init([.init(firstName: "to", secondName: "encoder", type: .identifier("Encoder"))])),
-                                                   effectSpecifiers: .throws)) {
+        let shouldOverride = hasOverride(declaration: declaration)
+        
+        return FunctionDeclSyntax(
+            modifiers: declaration.modifiers
+                .filter({ $0.name.tokenKind == .keyword(.public) || $0.name.tokenKind == .keyword(.open) }) + (shouldOverride ? [.init(name: .keyword(.override))] : []),
+            name: "encode",
+            signature: .init(
+                parameterClause: .init(
+                    parameters: .init([.init(firstName: "to", secondName: "encoder", type: .identifier("Encoder"))])
+                ),
+                effectSpecifiers: .throws
+            )
+        ) {
+            if shouldOverride {
+                "try super.encode(to: encoder)\n"
+            }
+            
             if !lines.isEmpty {
                 "var container = encoder.container(keyedBy: CodingKeys.self)"
             }
@@ -123,6 +160,8 @@ public enum codable: ExtensionMacro, MemberMacro {
             }
         }
         
+        let shouldOverride = hasOverride(declaration: declaration)
+        
         return try InitializerDeclSyntax(modifiers: modifiers,
                                          signature: .init(parameterClause: .init(parameters: .init([.init(firstName: "from", secondName: "decoder", type: .identifier("Decoder"))])),
                                                           effectSpecifiers: .throws)) {
@@ -146,6 +185,10 @@ public enum codable: ExtensionMacro, MemberMacro {
                 let isStatic = function.modifiers.contains(where: { $0.name.tokenKind == .keyword(.static) })
                 
                 "\(raw: hasTry ? "try " : "")\(raw: isStatic ? "Self" : "self").postDecodeAction()"
+            }
+            
+            if shouldOverride {
+                "\ntry super.init(from: decoder)"
             }
         }
     }
