@@ -11,7 +11,7 @@ import SwiftSyntaxMacrosTestSupport
 import XCTest
 @testable import MacrosDefinitions
 
-nonisolated(unsafe) fileprivate let testMacros: [String: any Macro.Type] = [
+fileprivate let testMacros: [String: any Macro.Type] = [
     "accessingAssociatedValues": accessingAssociatedValues.self,
 ]
 
