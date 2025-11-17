@@ -25,10 +25,10 @@ public enum accessingAssociatedValues: MemberMacro {
         }
         
         let needPublicModifier = declaration.modifiers.contains(where: { $0.name.tokenKind == .keyword(.public) })
-        let enumMembers = declaration.memberBlock.members.flatMap { member in
-            let decl = member.decl.as(EnumCaseDeclSyntax.self)!
-            return decl.elements.map {
-                EnumMember(decl: decl, name: $0.name, parameterClause: $0.parameterClause)
+        let enumMembers: [EnumMember] = declaration.memberBlock.members.flatMap { (member) -> [EnumMember] in
+            guard let decl = member.decl.as(EnumCaseDeclSyntax.self) else { return [] }
+            return decl.elements.map { (element) -> EnumMember in
+                EnumMember(decl: decl, name: element.name, parameterClause: element.parameterClause)
             }
         }
         
