@@ -32,7 +32,7 @@ public enum accessingAssociatedValues: MemberMacro {
             }
         }
         
-        let asFunction = try FunctionDeclSyntax("\(raw: asDocumentation)\nfunc `as`<T>(_ property: EnumProperty<T>) -> T?") {
+        let asFunction = try FunctionDeclSyntax("\(raw: asDocumentation)\n\(raw: needPublicModifier ? "public " : "")func `as`<T>(_ property: EnumProperty<T>) -> T?") {
             try SwitchExprSyntax("switch property.root") {
                 for member in enumMembers {
                     SwitchCaseSyntax("case .\(member.name):") {
@@ -49,7 +49,7 @@ public enum accessingAssociatedValues: MemberMacro {
             "return nil"
         }
         
-        let isFunction = try FunctionDeclSyntax("\(raw: isDocumentation)\nfunc `is`<T>(_ property: EnumProperty<T>) -> Bool") {
+        let isFunction = try FunctionDeclSyntax("\(raw: isDocumentation)\n\(raw: needPublicModifier ? "public " : "")func `is`<T>(_ property: EnumProperty<T>) -> Bool") {
             try SwitchExprSyntax("switch property.root") {
                 for member in enumMembers {
                     SwitchCaseSyntax("case .\(member.name):") {
@@ -61,7 +61,7 @@ public enum accessingAssociatedValues: MemberMacro {
             "return false"
         }
         
-        let propertyStruct = try StructDeclSyntax("\(raw: propertyStructDocumentation.replacingOccurrences(of: "``Model``", with: "``\(declaration.name.text)``"))\nstruct EnumProperty<T>: Sendable") {
+        let propertyStruct = try StructDeclSyntax("\(raw: propertyStructDocumentation.replacingOccurrences(of: "``Model``", with: "``\(declaration.name.text)``"))\n\(raw: needPublicModifier ? "public " : "")struct EnumProperty<T>: Sendable") {
             
             try EnumDeclSyntax("""
                            /// The cases used as an identifier to the property.

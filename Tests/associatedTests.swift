@@ -59,7 +59,7 @@ final class AssociatedTests: XCTestCase {
              /// If there isn't any value associated with `property`, this function would always return `Void`.
              ///
              /// - SeeAlso: If you are not interested in the value associated with `property`, see ``is(_:)``.
-             func `as`<T>(_ property: EnumProperty<T>) -> T? {
+             public func `as`<T>(_ property: EnumProperty<T>) -> T? {
                  switch property.root {
                  case .none:
                      if case .none = self {
@@ -102,7 +102,7 @@ final class AssociatedTests: XCTestCase {
              /// ```
              ///
              /// - SeeAlso: If you want to retrieve the value associated with `property`, see ``as(_:)``.
-             func `is`<T>(_ property: EnumProperty<T>) -> Bool {
+             public func `is`<T>(_ property: EnumProperty<T>) -> Bool {
                  switch property.root {
                  case .none:
                      if case .none = self {
@@ -131,7 +131,7 @@ final class AssociatedTests: XCTestCase {
              /// Auto generated type to access properties for ``Model``.
              ///
              /// You can use the static properties to retrieve enum cases.
-             struct EnumProperty<T>: Sendable {
+             public struct EnumProperty<T>: Sendable {
                  /// The cases used as an identifier to the property.
                  fileprivate enum __Case: Sendable {
                      case none, car, bus, bus2, bus3
