@@ -11,13 +11,14 @@ import CryptoKit
 
 /// Helper function of `#encrypt` macro.
 @inlinable
-public func _encrypt_macro_decrypt(key: (UInt64, UInt64, UInt64, UInt64), cipher: Data) -> String {
-    var key = key
-    
-    return withUnsafeMutablePointer(to: &key) { buffer in
-        buffer.withMemoryRebound(to: UInt8.self, capacity: 32) { pointer in
-            let key = SymmetricKey(data: UnsafeMutableBufferPointer(start: pointer, count: 32))
-            let sealedBox = try! AES.GCM.SealedBox(combined: cipher)
+public func _encrypt_macro_decrypt(key: (UInt64, UInt64, UInt64, UInt64), cipher: [UInt64], cipherCount: Int) -> String {
+    return withUnsafeBytes(of: key) { buffer in
+        let keyBuffer = buffer.bindMemory(to: UInt8.self)
+        return cipher.withUnsafeBytes { cipherBuffer in
+            let _cipher = cipherBuffer.bindMemory(to: UInt8.self)[0..<cipherCount]
+            
+            let key = SymmetricKey(data: UnsafeBufferPointer(start: keyBuffer.baseAddress!, count: 32))
+            let sealedBox = try! AES.GCM.SealedBox(combined: _cipher)
             let data = try! AES.GCM.open(sealedBox, using: key)
             return String(data: data, encoding: .utf8)!
         }

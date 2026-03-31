@@ -167,7 +167,7 @@ final class CodableTests: XCTestCase {
             struct Cat {
                 var name: String = ""
             
-                required init(from decoder: Decoder) throws {
+                init(from decoder: Decoder) throws {
                 }
             
             }

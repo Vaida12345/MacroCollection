@@ -5,16 +5,32 @@ import SwiftSyntaxMacros
 
 @main
 struct MacrosPlugin: CompilerPlugin {
-    let providingMacros: [Macro.Type] = [
-        codable.self,
-        memberwiseInitializable.self,
-        transient.self,
-        url.self,
-        symbol.self,
-        accessingAssociatedValues.self,
-        environment.self,
-        encodeOptions.self,
-        encrypt.self,
-        varyArgumentType.self
-    ]
+    var providingMacros: [Macro.Type] {
+        if #available(macOS 14.0, iOS 17.0, watchOS 10.0, *) {
+            [
+                codable.self,
+                memberwiseInitializable.self,
+                transient.self,
+                url.self,
+                symbol.self,
+                accessingAssociatedValues.self,
+                environment.self,
+                encodeOptions.self,
+                encrypt.self,
+                varyArgumentType.self
+            ]
+        } else {
+            [
+                codable.self,
+                memberwiseInitializable.self,
+                transient.self,
+                symbol.self,
+                accessingAssociatedValues.self,
+                environment.self,
+                encodeOptions.self,
+                encrypt.self,
+                varyArgumentType.self
+            ]
+        }
+    }
 }

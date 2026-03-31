@@ -30,23 +30,22 @@ public enum encrypt: ExpressionMacro {
         let cipher = try AES.GCM.seal(plainText.data(using: .utf8)!, using: key).combined!
         
         return key.withUnsafeBytes { buffer in
-            let _key = buffer.bindMemory(to: (UInt64, UInt64, UInt64, UInt64).self).baseAddress!.pointee
+            let _key = buffer.bindMemory(to: UInt64.self)
             
-            var _cipher = """
-            var cipher = Data(capacity: \(cipher.count))\n
-            """
-            for byte in cipher {
-                _cipher.append("cipher.append((\(byte) as UInt8))\n")
+            func hexEscape(_ word: UInt64) -> String {
+                "0x" + String(format: "%016llX", word)
             }
             
+            let cipherCount = cipher.count
+            let remainder = cipher.count % 8
+            let padding = remainder == 0 ? 0 : 8 - remainder
+            let paddedCipher = cipher + [UInt8](repeating: 0, count: padding)
             
-            return """
-            { () -> String in
-                let key: (UInt64, UInt64, UInt64, UInt64) = \(raw: _key)
-                \(raw: _cipher)
-                return _encrypt_macro_decrypt(key: key, cipher: cipher)
-            }()
-            """
+            return paddedCipher.withUnsafeBytes { cipherBuffer in
+                let _cipher = cipherBuffer.bindMemory(to: UInt64.self)
+                
+                return "_encrypt_macro_decrypt(key: (\(raw: _key.map(hexEscape).joined(separator: ","))), cipher: [\(raw: _cipher.map(hexEscape).joined(separator: ","))], cipherCount: \(raw: cipherCount))"
+            }
         }
     }
     

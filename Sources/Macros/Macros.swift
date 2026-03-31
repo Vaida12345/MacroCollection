@@ -214,7 +214,10 @@ public macro memberwiseInitializable() = #externalMacro(module: "MacrosDefinitio
 /// #url("cat")
 /// // error: The given string is not an url.
 /// ```
+///
+/// - Note: This function automatically IDNA and percent encode any invalid characters.
 @freestanding(expression)
+@available(macOS 14.0, iOS 17.0, watchOS 10.0, *)
 public macro url(_ string: StaticString) -> URL = #externalMacro(module: "MacrosDefinitions", type: "url")
 
 
@@ -233,15 +236,7 @@ public macro url(_ string: StaticString) -> URL = #externalMacro(module: "Macros
 /// Would expand to
 ///
 /// ```swift
-/// { () -> String in
-///     let key: (UInt64, UInt64, UInt64, UInt64) = ...
-///     var cipher = Data(capacity: 39)
-///     cipher.append((191 as UInt8))
-///     cipher.append((114 as UInt8))
-///     ...
-///
-///     return // decrypted string
-/// }()
+/// _encrypt_macro_decrypt(key: (0xE5DF6A82935F8FFA, 0x7C2CA449019B62B4, 0x728FD8CA8EA2C24E, 0x161442C7AC61B6D5), cipher: [...], cipherCount: 38)
 /// ```
 ///
 /// The `key` and `cipher` are different for each build, and these implementation details are completely hidden under the hood, users can treat `#encrypt("hello world")` as `"hello world"`.
