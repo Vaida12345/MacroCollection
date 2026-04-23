@@ -12,7 +12,8 @@ import XCTest
 @testable import MacrosDefinitions
 
 fileprivate let testMacros: [String: any Macro.Type] = [
-    "environment": environment.self,
+    "environment": AttributeDeclMacro.self,
+    "appStorage": AttributeDeclMacro.self,
 ]
 
 
@@ -48,6 +49,13 @@ final class EnvironmentTests: XCTestCase {
             @Environment(Model1.self) private var model1
             @Environment(Model2.self) private var model2
             """
+        
+        assertMacroExpansion(source, expandedSource: expected, macros: testMacros)
+    }
+    
+    func testSingleAppStorage() async throws {
+        let source = #"#appStorage(\.memorySaver)"#
+        let expected = #"@AppStorage(\.memorySaver) private var memorySaver"#
         
         assertMacroExpansion(source, expandedSource: expected, macros: testMacros)
     }

@@ -14,7 +14,7 @@ struct MacrosPlugin: CompilerPlugin {
                 url.self,
                 symbol.self,
                 accessingAssociatedValues.self,
-                environment.self,
+                AttributeDeclMacro.self,
                 encodeOptions.self,
                 encrypt.self,
                 varyArgumentType.self
@@ -26,7 +26,7 @@ struct MacrosPlugin: CompilerPlugin {
                 transient.self,
                 symbol.self,
                 accessingAssociatedValues.self,
-                environment.self,
+                AttributeDeclMacro.self,
                 encodeOptions.self,
                 encrypt.self,
                 varyArgumentType.self
