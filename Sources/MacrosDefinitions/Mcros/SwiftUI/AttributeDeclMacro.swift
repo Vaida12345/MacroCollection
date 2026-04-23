@@ -1,6 +1,6 @@
 //
-//  environment.swift
-//  NucleusMacros
+//  AttributeDeclMacro.swift
+//  MacroCollection
 //
 //  Created by Vaida on 2024/2/24.
 //
@@ -19,11 +19,20 @@ public enum AttributeDeclMacro: DeclarationMacro {
     public static func expansion(of node: some SwiftSyntax.FreestandingMacroExpansionSyntax, 
                                  in context: some SwiftSyntaxMacros.MacroExpansionContext
     ) throws -> [SwiftSyntax.DeclSyntax] {
-        guard let declaration = node.as(MacroExpansionExprSyntax.self) else { fatalError("Swift Macro Error: input node is not a macro.") }
-        let macroName = declaration.macroName.text
-        let wrapperName = macroName.frontToUpper()
+        let macroName: String
+        let arguments: LabeledExprListSyntax
         
-        let arguments = declaration.arguments
+        if let declaration = node.as(MacroExpansionExprSyntax.self) {
+            macroName = declaration.macroName.text
+            arguments = declaration.arguments
+        } else if let declaration = node.as(MacroExpansionDeclSyntax.self) {
+            macroName = declaration.macroName.text
+            arguments = declaration.arguments
+        } else {
+            fatalError("Swift Macro Error: input node is not a macro.")
+        }
+        
+        let wrapperName = macroName.frontToUpper()
         
         // key path
         if arguments.allSatisfy({ $0.expression.is(KeyPathExprSyntax.self) }) {
@@ -47,9 +56,9 @@ public enum AttributeDeclMacro: DeclarationMacro {
             }
         } else {
             if arguments.count > 1 {
-                throw DiagnosticsError("Mixing argument types is not allowed", highlighting: declaration)
+                throw DiagnosticsError("Mixing argument types is not allowed", highlighting: node)
             } else {
-                throw DiagnosticsError("Unsupported arguments", highlighting: declaration)
+                throw DiagnosticsError("Unsupported arguments", highlighting: node)
             }
         }
     }

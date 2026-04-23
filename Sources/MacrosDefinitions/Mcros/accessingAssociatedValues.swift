@@ -1,6 +1,6 @@
 //
 //  accessingAssociatedValues.swift
-//  NucleusMacros
+//  MacroCollection
 //
 //  Created by Vaida on 2023/12/18.
 //

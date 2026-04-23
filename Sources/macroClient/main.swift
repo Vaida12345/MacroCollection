@@ -4,8 +4,20 @@ import SwiftUI
 import MacroCollection
 
 
-if #available(macOS 14.0, *) {
-    let url = #url("cat")
-} else {
-    // Fallback on earlier versions
+import SwiftUI
+
+
+struct ModelView: View {
+    
+    #environment(\.description)
+    
+    var body: some View {
+        
+    }
+    
+}
+
+
+struct ABCD {
+    #environment(\.description)
 }
