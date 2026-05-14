@@ -4,20 +4,12 @@ import SwiftUI
 import MacroCollection
 
 
-import SwiftUI
-
-
-struct ModelView: View {
-    
-    #environment(\.description)
-    
-    var body: some View {
-        
-    }
-    
-}
-
-
-struct ABCD {
-    #environment(\.description)
+@accessingAssociatedValues
+enum Model {
+    case a
+    case b(Int)
+    case c(String, Int)
+    case d(a: String)
+    case e(a: String, b: Int)
+    case f(String, b: Int)
 }

@@ -296,21 +296,6 @@ import SwiftUI
 @freestanding(declaration, names: arbitrary)
 public macro environment<each Value>(_ contents: repeat KeyPath<EnvironmentValues, each Value>) = #externalMacro(module: "MacrosDefinitions", type: "AttributeDeclMacro")
 
-/// *syntax sugar* for defining swiftUI `@AppStorage`.
-///
-/// > Example:
-/// > ```swift
-/// > #appStorage(\.memorySaver)
-/// > ```
-/// > would expand to
-/// > ```swift
-/// > @appStorage(\.memorySaver) private var memorySaver
-/// > ```
-///
-/// - Note: This is designed to work with `Defaults` package.
-@freestanding(declaration, names: arbitrary)
-public macro appStorage<each Value>(_ contents: repeat KeyPath<EnvironmentValues, each Value>) = #externalMacro(module: "MacrosDefinitions", type: "AttributeDeclMacro")
-
 
 /// *syntax sugar* for defining swiftUI `@Environment`.
 ///

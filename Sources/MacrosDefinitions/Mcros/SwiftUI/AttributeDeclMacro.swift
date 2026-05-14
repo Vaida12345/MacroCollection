@@ -34,8 +34,7 @@ public enum AttributeDeclMacro: DeclarationMacro {
         
         let wrapperName = macroName.frontToUpper()
         
-        // key path
-        if arguments.allSatisfy({ $0.expression.is(KeyPathExprSyntax.self) }) {
+        if arguments.allSatisfy({ $0.expression.is(KeyPathExprSyntax.self) }) { // key path
             return try arguments.map { argument in
                 guard let expression = argument.expression.as(KeyPathExprSyntax.self) else { throw DiagnosticsError("Expression is invalid", highlighting: argument) }
                 guard expression.components.count == 1, let component = expression.components.first?.component else { throw DiagnosticsError("Nested key path is not supported", highlighting: argument) }
@@ -44,7 +43,7 @@ public enum AttributeDeclMacro: DeclarationMacro {
                 let identifier = property.declName
                 return DeclSyntax("@\(raw: wrapperName)(\\.\(identifier)) private var \(identifier)")
             }
-        } else if arguments.allSatisfy({ $0.expression.is(MemberAccessExprSyntax.self) }) {
+        } else if arguments.allSatisfy({ $0.expression.is(MemberAccessExprSyntax.self) }) { // Model.self
             
             return try arguments.map { argument in
                 guard let expression = argument.expression.as(MemberAccessExprSyntax.self) else { throw DiagnosticsError("Expression is invalid", highlighting: argument) }
