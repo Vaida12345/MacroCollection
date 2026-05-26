@@ -14,7 +14,7 @@ public enum AttributeEncodeOptions {
     
     /// Ignore the property.
     ///
-    /// This is the same as ``MacroCollection/encodeOptions(_:)``
+    /// This is the same as ``MacroCollection/transient()``
     ///
     /// ### Usage
     /// This macro must be used within the ``codable()`` annotated class.
@@ -60,7 +60,7 @@ public enum AttributeEncodeOptions {
     ///
     /// When annotated, the encoder would only attempt to encode when the value is different from the default value, measured by `==`, and the same for decoders.
     ///
-    /// - Bug: Annotate this on a non-`Equitable` property will cause failure of complication.
+    /// - Bug: Annotating this on a non-`Equatable` property will cause failure of compilation.
     ///
     /// ### Usage
     /// This macro must be used within the ``codable()`` annotated class.

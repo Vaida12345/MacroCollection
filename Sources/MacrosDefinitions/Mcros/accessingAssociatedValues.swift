@@ -21,7 +21,7 @@ public enum accessingAssociatedValues: MemberMacro {
         in context: some MacroExpansionContext
     ) throws -> [DeclSyntax] {
         guard let declaration = declaration.as(EnumDeclSyntax.self) else {
-            throw DiagnosticsError.shouldRemoveMacro(attributes: declaration.attributes, node: node, message: "@codable should only be applied to `enum`")
+            throw DiagnosticsError.shouldRemoveMacro(attributes: declaration.attributes, node: node, message: "@accessingAssociatedValues should only be applied to `enum`")
         }
         
         let needPublicModifier = declaration.modifiers.contains(where: { $0.name.tokenKind == .keyword(.public) })

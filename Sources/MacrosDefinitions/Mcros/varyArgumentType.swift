@@ -22,7 +22,7 @@ public enum varyArgumentType: PeerMacro {
     ) throws -> [SwiftSyntax.DeclSyntax] {
         if let declaration = declaration.as(FunctionDeclSyntax.self) {
             guard declaration.genericWhereClause == nil else {
-                throw DiagnosticsError.shouldRemoveMacro(attributes: nil, node: node, message: "`@variateArgumentType` does not work with generics")
+                throw DiagnosticsError.shouldRemoveMacro(attributes: nil, node: node, message: "`@varyArgumentType` does not work with generics")
             }
             
             guard let attributeArgList = node.arguments?.as(LabeledExprListSyntax.self),
@@ -53,7 +53,7 @@ public enum varyArgumentType: PeerMacro {
             return [DeclSyntax(decl)]
         } else if let declaration = declaration.as(InitializerDeclSyntax.self) {
             guard declaration.genericWhereClause == nil else {
-                throw DiagnosticsError.shouldRemoveMacro(attributes: nil, node: node, message: "`@variateArgumentType` does not work with generics")
+                throw DiagnosticsError.shouldRemoveMacro(attributes: nil, node: node, message: "`@varyArgumentType` does not work with generics")
             }
             
             guard let attributeArgList = node.arguments?.as(LabeledExprListSyntax.self),
@@ -83,7 +83,7 @@ public enum varyArgumentType: PeerMacro {
             decl.signature.parameterClause.parameters = parameters
             return [DeclSyntax(decl)]
         } else {
-            throw DiagnosticsError.shouldRemoveMacro(attributes: nil, node: node, message: "`@variateArgumentType` does not work on this type of declaration.")
+            throw DiagnosticsError.shouldRemoveMacro(attributes: nil, node: node, message: "`@varyArgumentType` does not work on this type of declaration.")
         }
     }
     
