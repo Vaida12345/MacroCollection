@@ -22,13 +22,13 @@ public enum memberwiseInitializable: MemberMacro {
         in context: some SwiftSyntaxMacros.MacroExpansionContext,
     ) throws -> [SwiftSyntax.DeclSyntax] {
         let members = declaration.mapProperties { variable, variables, name, type -> CodeBlockItemSyntax? in
-            guard type != .computed && !type.isStatic && !((type == .staticConstant || type == .storedConstant) && variable.initializer != nil) else { return nil }
+            guard type != .computed && !type.isStatic && !type.isLazy && !((type == .staticConstant || type == .storedConstant) && variable.initializer != nil) else { return nil }
             return "self.\(raw: name) = \(raw: name)"
         }
         
         var allHaveInitializer = true
         var parameters = try declaration.mapProperties { variable, decl, name, type -> FunctionParameterSyntax? in
-            guard type != .computed && !type.isStatic && !((type == .staticConstant || type == .storedConstant) && variable.initializer != nil) else { return nil }
+            guard type != .computed && !type.isStatic && !type.isLazy && !((type == .staticConstant || type == .storedConstant) && variable.initializer != nil) else { return nil }
             
             let firstName = variable.pattern.as(IdentifierPatternSyntax.self)!.identifier
             let type = try variable.inferredType(in: decl)

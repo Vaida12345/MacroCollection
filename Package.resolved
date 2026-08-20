@@ -1,13 +1,13 @@
 {
-  "originHash" : "61eb08a1882c3b353fc101856ec759e0d5dc0ced0bc2dc2889cea3a47977ee4b",
+  "originHash" : "16a644f2f8f25d8e1e00a40e5810f09e549b660c38b373344bb556252436288b",
   "pins" : [
     {
       "identity" : "macroessentials",
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/Vaida12345/MacroEssentials.git",
       "state" : {
-        "revision" : "5dead0e2451d697dee1fbeca14aef0a49b736927",
-        "version" : "1.1.0"
+        "revision" : "69fb00b039db8dd8f4590b9ccadc0447f5205c59",
+        "version" : "1.2.1"
       }
     },
     {
