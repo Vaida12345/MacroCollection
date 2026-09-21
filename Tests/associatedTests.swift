@@ -9,7 +9,9 @@
 import SwiftSyntaxMacros
 import SwiftSyntaxMacrosTestSupport
 import XCTest
+import Testing
 @testable import MacrosDefinitions
+@testable import MacroCollection
 
 fileprivate let testMacros: [String: any Macro.Type] = [
     "accessingAssociatedValues": accessingAssociatedValues.self,
@@ -167,6 +169,21 @@ final class AssociatedTests: XCTestCase {
          """
         
         assertMacroExpansion(source, expandedSource: expected, macros: testMacros)
+    }
+    
+    
+    @accessingAssociatedValues
+    enum Model {
+        case a
+        case b(Int)
+        case c
+    }
+    
+    func testIs() {
+        let model = Model.c
+        #expect(!model.is(.a))
+        #expect(!model.is(.b))
+        #expect(model.is(.c))
     }
 }
 #endif

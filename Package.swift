@@ -1,4 +1,4 @@
-// swift-tools-version: 6.2
+// swift-tools-version: 6.4
 // The swift-tools-version declares the minimum version of Swift required to build this package.
 
 import PackageDescription
@@ -14,8 +14,8 @@ let package = Package (
     ], products: [
         .library(name: "MacroCollection", targets: ["MacroCollection"])
     ], dependencies: [
-        .package(url: "https://github.com/apple/swift-syntax.git", from: "603.0.0"),
-        .package(url: "https://github.com/Vaida12345/MacroEssentials.git", from: "1.2.1")
+        .package(url: "https://github.com/apple/swift-syntax.git", from: "604.0.0"),
+        .package(url: "https://github.com/Vaida12345/MacroEssentials.git", from: "1.2.2")
     ], targets: [
         .macro(name: "MacrosDefinitions",
                dependencies: [

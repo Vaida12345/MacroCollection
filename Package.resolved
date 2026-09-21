@@ -1,13 +1,13 @@
 {
-  "originHash" : "16a644f2f8f25d8e1e00a40e5810f09e549b660c38b373344bb556252436288b",
+  "originHash" : "ae79925c0cbf2baaf8a636959f2f45a209f8fbffa21fdbe9753ccd67cb5c6afe",
   "pins" : [
     {
       "identity" : "macroessentials",
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/Vaida12345/MacroEssentials.git",
       "state" : {
-        "revision" : "69fb00b039db8dd8f4590b9ccadc0447f5205c59",
-        "version" : "1.2.1"
+        "revision" : "7e52d561f2d2bc1b7156845f5cd8114082f9bf67",
+        "version" : "1.2.2"
       }
     },
     {
@@ -15,8 +15,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/apple/swift-syntax.git",
       "state" : {
-        "revision" : "9de99a78f099e59caf2b2beec65a4c45d54b2081",
-        "version" : "603.0.1"
+        "revision" : "050f1a346fbbac0ca2cfb15a95274f7bd1cf0ccf",
+        "version" : "604.0.0"
       }
     }
   ],

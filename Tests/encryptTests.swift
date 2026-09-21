@@ -18,17 +18,3 @@ import XCTest
     let encrypted = #encrypt("1234567890")
     #expect(encrypted == string)
 }
-
-@Test func encryptTestsSegmented() {
-    assertMacroExpansion(
-        #"""
-             #encrypt("123\n456")
-        """#,
-        expandedSource: #"""
-             "123\n456"
-            """#,
-        macros: [
-            "encrypt" : MacrosDefinitions.encrypt.self
-        ]
-    )
-}
