@@ -184,9 +184,9 @@ public macro transient() = #externalMacro(module: "MacrosDefinitions", type: "tr
 public macro encodeOptions(_ options: AttributeEncodeOptions...) = #externalMacro(module: "MacrosDefinitions", type: "encodeOptions")
 
 
-/// Generates an initializer including all the stored properties. if it is possible, an `init()` will also be synthesized.
+/// Generates an initializer including all the stored properties. If it is possible, an `init()` will also be synthesized.
 ///
-/// Apply this macro to a class to generate memberwise initializers.
+/// Apply this macro to a class, struct, or actor to generate memberwise initializers.
 /// ```swift
 /// @memberwiseInitializable
 /// class Cat {
@@ -202,7 +202,38 @@ public macro encodeOptions(_ options: AttributeEncodeOptions...) = #externalMacr
 /// }
 /// ```
 ///
-/// Sometimes, type cannot be interfered, such as the ones assigned by calling functions. In this case, an error will be emitted asking to declare type explicitly.
+/// Sometimes, type cannot be inferred, such as the ones assigned by calling functions. In this case, an error will be emitted asking to declare type explicitly.
+///
+/// An initializer is not generated if the type already declares one with the same argument labels and types.
+///
+/// ## Access Control
+///
+/// Like the memberwise initializer synthesized by Swift, the generated initializers are `internal` unless specified otherwise. To change it, pass an ``AccessControl``.
+/// ```swift
+/// @memberwiseInitializable(.public)
+/// public struct Cat {
+///     public var name: String
+///     public var age: Int
+/// }
+/// ```
+///
+/// This above macro would expand to the following.
+/// ```swift
+/// public init(name: String, age: Int) {
+///     self.name = name
+///     self.age = age
+/// }
+/// ```
+///
+/// The access control applies to every initializer generated, including the `init()` when it is synthesized.
+///
+/// - Parameters:
+///   - accessControl: The access control of the generated initializers. Omit it, or pass `nil`, to leave it unspecified.
+///
+/// ## Topics
+///
+/// ### Controlling Access
+/// - ``AccessControl``
 @attached(member, names: named(init))
 public macro memberwiseInitializable(_ accessControl: AccessControl? = nil) = #externalMacro(module: "MacrosDefinitions", type: "memberwiseInitializable")
 
