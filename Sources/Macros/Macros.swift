@@ -204,7 +204,7 @@ public macro encodeOptions(_ options: AttributeEncodeOptions...) = #externalMacr
 ///
 /// Sometimes, type cannot be interfered, such as the ones assigned by calling functions. In this case, an error will be emitted asking to declare type explicitly.
 @attached(member, names: named(init))
-public macro memberwiseInitializable() = #externalMacro(module: "MacrosDefinitions", type: "memberwiseInitializable")
+public macro memberwiseInitializable(_ accessControl: AccessControl? = nil) = #externalMacro(module: "MacrosDefinitions", type: "memberwiseInitializable")
 
 
 /// Creates an url with compile-time validation

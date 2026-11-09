@@ -65,13 +65,20 @@ public enum memberwiseInitializable: MemberMacro {
             result.append(memberwiseInitializer)
         }
         
+        let accessControl = AccessControl.accessControl(declaration: declaration)
+        let initText = if let accessControl {
+            "\(accessControl.rawValue) init()"
+        } else {
+            "init()"
+        }
+        
         if allHaveInitializer && !parameters.isEmpty {
             if !declaration.memberBlock.members.contains(where: { member in
                 guard let decl = member.decl.as(InitializerDeclSyntax.self) else { return false }
                 return decl.signature.parameterClause.parameters.isEmpty
             }) {
                 try result.append {
-                    try InitializerDeclSyntax("init()") {
+                    try InitializerDeclSyntax("\(raw: initText)") {
                         
                     }
                 }
@@ -81,4 +88,45 @@ public enum memberwiseInitializable: MemberMacro {
         return result
     }
     
+}
+
+
+private enum AccessControl: String, BitwiseCopyable, Sendable, Hashable {
+    case `public`
+    case `internal`
+    case `private`
+    
+    static func accessControl(declaration: some DeclGroupSyntax) -> AccessControl? {
+        if let decl = declaration.as(ClassDeclSyntax.self) {
+            for attribute in decl.attributes {
+                guard case .attribute(let attribute) = attribute else { continue }
+                guard attribute.attributeName.as(IdentifierTypeSyntax.self)?.name.isEqual(to: "memberwiseInitializable") ?? false else { continue }
+                guard let arg = attribute.arguments?.children(viewMode: .sourceAccurate).first else { continue }
+                guard let expr = arg.as(LabeledExprSyntax.self)?.expression.as(MemberAccessExprSyntax.self) else { continue }
+                
+                switch expr.declName.baseName.text {
+                case "public": return .public
+                case "internal": return .internal
+                case "private": return .private
+                default: return nil
+                }
+            }
+        } else if let decl = declaration.as(StructDeclSyntax.self) {
+            for attribute in decl.attributes {
+                guard case .attribute(let attribute) = attribute else { continue }
+                guard attribute.attributeName.as(IdentifierTypeSyntax.self)?.name.isEqual(to: "memberwiseInitializable") ?? false else { continue }
+                guard let arg = attribute.arguments?.children(viewMode: .sourceAccurate).first else { continue }
+                guard let expr = arg.as(LabeledExprSyntax.self)?.expression.as(MemberAccessExprSyntax.self) else { continue }
+                
+                switch expr.declName.baseName.text {
+                case "public": return .public
+                case "internal": return .internal
+                case "private": return .private
+                default: return nil
+                }
+            }
+        }
+        
+        return nil
+    }
 }
