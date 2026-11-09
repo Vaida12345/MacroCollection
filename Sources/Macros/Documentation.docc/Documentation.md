@@ -44,7 +44,7 @@ A set of macros aiming to extend the functionality of Swift
 
 - ``accessingAssociatedValues()``
 - ``codable()``
-- ``memberwiseInitializable()``
+- ``memberwiseInitializable(_:)``
 
 ### SwiftUI
 A set of macros to make coding in SwiftUI easier
