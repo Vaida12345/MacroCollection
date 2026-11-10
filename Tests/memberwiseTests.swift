@@ -648,6 +648,98 @@ final class MemberwiseInitializableTests: XCTestCase {
         )
     }
     
+    // MARK: - Closures and Optionals
+    
+    func testClosuresAreEscaping() {
+        assertMacroExpansion(
+            """
+            @memberwiseInitializable
+            struct Cat {
+                var action: () -> Void
+                var transform: @Sendable (Int) -> Int
+                var wrapped: (() -> Void)
+                var optional: (() -> Void)?
+            }
+            """,
+            expandedSource: """
+            struct Cat {
+                var action: () -> Void
+                var transform: @Sendable (Int) -> Int
+                var wrapped: (() -> Void)
+                var optional: (() -> Void)?
+
+                init(action: @escaping () -> Void, transform: @escaping @Sendable (Int) -> Int, wrapped: @escaping (() -> Void), optional: (() -> Void)? = nil) {
+                    self.action = action
+                    self.transform = transform
+                    self.wrapped = wrapped
+                    self.optional = optional
+                }
+            }
+            """,
+            macros: testMacros
+        )
+    }
+    
+    func testOptionalVariablesStartWithNil() {
+        assertMacroExpansion(
+            """
+            @memberwiseInitializable
+            struct Cat {
+                var a: Int?
+                var b: String!
+                let c: Int?
+                var d: Int? = 1
+                var e: Optional<Int>
+            }
+            """,
+            expandedSource: """
+            struct Cat {
+                var a: Int?
+                var b: String!
+                let c: Int?
+                var d: Int? = 1
+                var e: Optional<Int>
+
+                init(a: Int? = nil, b: String! = nil, c: Int?, d: Int? = 1, e: Optional<Int> = nil) {
+                    self.a = a
+                    self.b = b
+                    self.c = c
+                    self.d = d
+                    self.e = e
+                }
+            }
+            """,
+            macros: testMacros
+        )
+    }
+    
+    func testOnlyOptionalVariablesSynthesizeTheEmptyInitializer() {
+        assertMacroExpansion(
+            """
+            @memberwiseInitializable
+            struct Cat {
+                var a: Int?
+                var b: String?
+            }
+            """,
+            expandedSource: """
+            struct Cat {
+                var a: Int?
+                var b: String?
+
+                init(a: Int? = nil, b: String? = nil) {
+                    self.a = a
+                    self.b = b
+                }
+
+                init() {
+                }
+            }
+            """,
+            macros: testMacros
+        )
+    }
+    
     // MARK: - Diagnostics
     
     func testNonLiteralAccessControlIsDiagnosed() {
@@ -734,6 +826,32 @@ final class MemberwiseInitializableTests: XCTestCase {
         
         XCTAssertEqual(PrivateAccess.make().a, 1)
         XCTAssertEqual(PrivateAccess.make(a: 2).a, 2)
+    }
+    
+    @memberwiseInitializable
+    struct Handlers {
+        var action: () -> Void
+        var transform: @Sendable (Int) -> Int
+        var optionalAction: (() -> Void)?
+    }
+    
+    @memberwiseInitializable
+    struct Optionals {
+        var a: Int?
+        var b: String?
+    }
+    
+    func testClosureAndOptionalInitializersCompile() {
+        var calls = 0
+        let handlers = Handlers(action: { calls += 1 }, transform: { $0 + 1 })
+        handlers.action()
+        XCTAssertEqual(calls, 1)
+        XCTAssertEqual(handlers.transform(1), 2)
+        XCTAssertNil(handlers.optionalAction)
+        
+        XCTAssertNil(Optionals().a)
+        XCTAssertEqual(Optionals(a: 1).a, 1)
+        XCTAssertEqual(Optionals(a: 1, b: "b").b, "b")
     }
     
 }

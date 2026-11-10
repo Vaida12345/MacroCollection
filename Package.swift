@@ -35,6 +35,7 @@ let package = Package (
             dependencies: [
                 "MacrosDefinitions",
                 "MacroCollection",
+                .product(name: "SwiftSyntaxMacroExpansion", package: "swift-syntax"),
                 .product(name: "SwiftSyntaxMacrosTestSupport", package: "swift-syntax"),
             ], path: "Tests"
         ),

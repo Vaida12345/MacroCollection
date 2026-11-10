@@ -24,7 +24,8 @@ public enum accessingAssociatedValues: MemberMacro {
             throw DiagnosticsError.shouldRemoveMacro(attributes: declaration.attributes, node: node, message: "@accessingAssociatedValues should only be applied to `enum`")
         }
         
-        let needPublicModifier = declaration.modifiers.contains(where: { $0.name.tokenKind == .keyword(.public) })
+        let access = declaration.accessModifiers().map(\.trimmedDescription).joined(separator: " ")
+        let accessPrefix = access.isEmpty ? "" : access + " "
         let enumMembers: [EnumMember] = declaration.memberBlock.members.flatMap { (member) -> [EnumMember] in
             guard let decl = member.decl.as(EnumCaseDeclSyntax.self) else { return [] }
             return decl.elements.map { (element) -> EnumMember in
@@ -32,12 +33,16 @@ public enum accessingAssociatedValues: MemberMacro {
             }
         }
         
-        let asFunction = try FunctionDeclSyntax("\(raw: asDocumentation)\n\(raw: needPublicModifier ? "public " : "")func `as`<T>(_ property: EnumProperty<T>) -> T?") {
+        guard !enumMembers.isEmpty else {
+            throw DiagnosticsError.shouldRemoveMacro(attributes: declaration.attributes, node: node, message: "@accessingAssociatedValues found no case to generate the accessors for")
+        }
+        
+        let asFunction = try FunctionDeclSyntax("\(raw: asDocumentation)\n\(raw: accessPrefix)func `as`<T>(_ property: EnumProperty<T>) -> T?") {
             try SwitchExprSyntax("switch property.root") {
                 for member in enumMembers {
                     SwitchCaseSyntax("case .\(member.name):") {
                         if let args = member.args {
-                            let tuple = args.map{ $0.0.text.trimmingCharacters(in: .whitespaces) }.joined(separator: ", ")
+                            let tuple = args.map { $0.0.trimmedDescription }.joined(separator: ", ")
                             "if case let .\(member.name)(\(raw: tuple)) = self { return (\(raw: tuple)) as? T }"
                         } else {
                             "if case .\(member.name) = self { return () as? T }"
@@ -49,7 +54,7 @@ public enum accessingAssociatedValues: MemberMacro {
             "return nil"
         }
         
-        let isFunction = try FunctionDeclSyntax("\(raw: isDocumentation)\n\(raw: needPublicModifier ? "public " : "")func `is`<T>(_ property: EnumProperty<T>) -> Bool") {
+        let isFunction = try FunctionDeclSyntax("\(raw: isDocumentation)\n\(raw: accessPrefix)func `is`<T>(_ property: EnumProperty<T>) -> Bool") {
             try SwitchExprSyntax("switch property.root") {
                 for member in enumMembers {
                     SwitchCaseSyntax("case .\(member.name):") {
@@ -61,7 +66,7 @@ public enum accessingAssociatedValues: MemberMacro {
             "return false"
         }
         
-        let propertyStruct = try StructDeclSyntax("\(raw: propertyStructDocumentation.replacingOccurrences(of: "``Model``", with: "``\(declaration.name.text)``"))\n\(raw: needPublicModifier ? "public " : "")struct EnumProperty<T>: Sendable") {
+        let propertyStruct = try StructDeclSyntax("\(raw: propertyStructDocumentation.replacingOccurrences(of: "``Model``", with: "``\(declaration.name.text)``"))\n\(raw: accessPrefix)struct EnumProperty<T>: Sendable") {
             
             try EnumDeclSyntax("""
                            /// The cases used as an identifier to the property.
@@ -82,7 +87,7 @@ public enum accessingAssociatedValues: MemberMacro {
             for member in enumMembers {
                 """
                 /// Indicates the value of ``\(declaration.name.trimmed)/\(raw: member.caseName)``
-                \(raw: needPublicModifier ? "public" : "") static var \(member.name): EnumProperty<\(raw: member.type)> { EnumProperty<\(raw: member.type)>(root: .\(member.name)) }
+                \(raw: access) static var \(member.name): EnumProperty<\(raw: member.type)> { EnumProperty<\(raw: member.type)>(root: .\(member.name)) }
                 """
             }
             
@@ -103,14 +108,18 @@ public enum accessingAssociatedValues: MemberMacro {
         
         let parameterClause: EnumCaseParameterClauseSyntax?
         
+        /// The names binding the associated values, and their types.
+        ///
+        /// The values are named by their position, since a label cannot always name a variable, eg, `_` and the keywords.
         var args: [(TokenSyntax, TypeSyntax)]? {
             guard let parameterClause else { return nil }
-            return parameterClause.parameters.enumerated().map { (index, element) in (element.firstName ?? TokenSyntax.identifier("v\(index)"), element.type) }
+            return parameterClause.parameters.enumerated().map { (index, element) in (TokenSyntax.identifier("v\(index)"), element.type) }
         }
         
+        /// The labels and the types of the associated values, where an unlabeled one, including `_`, has no label.
         var rawArgs: [(TokenSyntax?, TypeSyntax)]? {
             guard let parameterClause else { return nil }
-            return parameterClause.parameters.map { element in (element.firstName, element.type) }
+            return parameterClause.parameters.map { element in (element.firstName.flatMap { $0.tokenKind == .wildcard ? nil : $0 }, element.type) }
         }
         
         var caseName: String {

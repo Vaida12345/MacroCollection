@@ -17,10 +17,7 @@ public enum encrypt: ExpressionMacro {
     public static func expansion(of node: some SwiftSyntax.FreestandingMacroExpansionSyntax,
                                  in context: some SwiftSyntaxMacros.MacroExpansionContext
     ) throws -> SwiftSyntax.ExprSyntax {
-        guard let plainText = node.arguments.first?.expression.stringLiteralValue else {
-            fatalError("Compiler Bug: The passed argument is not static string")
-        }
-        
+        let plainText = try node.stringLiteralArgument().value
         
         let key = SymmetricKey(size: .bits256)
         

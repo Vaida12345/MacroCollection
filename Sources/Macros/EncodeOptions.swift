@@ -17,7 +17,7 @@ public enum AttributeEncodeOptions {
     /// This is the same as ``MacroCollection/transient()``
     ///
     /// ### Usage
-    /// This macro must be used within the ``codable()`` annotated class.
+    /// This macro must be used within the ``codable(_:)`` annotated class.
     /// ```swift
     /// @codable
     /// class Cat {
@@ -36,12 +36,14 @@ public enum AttributeEncodeOptions {
     /// ```
     case ignored
     
-    /// Encode and decode the property only when present.
+    /// Encode the property only when present.
     ///
-    /// This option is set to `Optional` properties. When annotated, the encoder would only attempt to encode when the value is non-`nil`, and the same for decoders.
+    /// This option can only be applied to `Optional` properties. When annotated, the encoder leaves the key out if the value is `nil`, instead of writing `null`.
+    ///
+    /// Decoding does not depend on this option: an optional property is always decoded using `decodeIfPresent`, hence its key may be missing.
     ///
     /// ### Usage
-    /// This macro must be used within the ``codable()`` annotated class.
+    /// This macro must be used within the ``codable(_:)`` annotated class.
     /// ```swift
     /// @codable
     /// class Cat {
@@ -50,7 +52,7 @@ public enum AttributeEncodeOptions {
     /// }
     /// ```
     ///
-    /// In the generated `encode(to:)` and `init(from:)`. Such value will only be encoded / decoded when the value is not nil.
+    /// In the generated `encode(to:)`. Such value will only be encoded when the value is not nil.
     /// ```swift
     /// try container.encodeIfPresent(self.age, forKey: .age)
     /// ```
@@ -63,7 +65,7 @@ public enum AttributeEncodeOptions {
     /// - Bug: Annotating this on a non-`Equatable` property will cause failure of compilation.
     ///
     /// ### Usage
-    /// This macro must be used within the ``codable()`` annotated class.
+    /// This macro must be used within the ``codable(_:)`` annotated class.
     /// ```swift
     /// @codable
     /// class Cat {

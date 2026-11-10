@@ -84,7 +84,14 @@ final class EnvironmentTests: XCTestCase {
 
         assertMacroExpansion(source, expandedSource: expected, macros: testMacros)
     }
-
+    
+    func testNestedTypeIsNamedByItsLastComponent() async throws {
+        let source = #"#environment(Namespace.Provider.self)"#
+        let expected = #"@Environment(Namespace.Provider.self) private var provider"#
+        
+        assertMacroExpansion(source, expandedSource: expected, macros: testMacros)
+    }
+    
     func testObservableNameLowercasing() async throws {
         let source = #"#environment(URLModel.self)"#
         let expected = #"@Environment(URLModel.self) private var uRLModel"#

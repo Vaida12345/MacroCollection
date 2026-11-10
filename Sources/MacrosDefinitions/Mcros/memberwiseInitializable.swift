@@ -76,12 +76,17 @@ public enum memberwiseInitializable: MemberMacro {
         
         /// The parameter through which the initializer receives the property.
         var parameter: FunctionParameterSyntax {
-            FunctionParameterSyntax(firstName: .identifier(name), colon: .colonToken(), type: type, defaultValue: defaultValue)
+            FunctionParameterSyntax(firstName: .identifier(name), colon: .colonToken(), type: parameterType, defaultValue: defaultValue)
         }
         
         /// The statement assigning the received parameter to the property.
         var assignment: CodeBlockItemSyntax {
             "self.\(raw: name) = \(raw: name)"
+        }
+        
+        /// The type of the parameter, which has to be `@escaping` for a closure, as the initializer stores it.
+        private var parameterType: TypeSyntax {
+            type.isFunctionType ? "@escaping \(type)" : type
         }
     }
     
@@ -89,7 +94,16 @@ public enum memberwiseInitializable: MemberMacro {
     private static func storedProperties(of declaration: some DeclGroupSyntax) throws -> [StoredProperty] {
         try declaration.properties
             .filter { $0.isMemberwiseInitializable && !$0.isLazy }
-            .map { StoredProperty(name: $0.name, type: try $0.type(), defaultValue: $0.initializer) }
+            .map { property in
+                let type = try property.type()
+                return StoredProperty(name: property.name, type: type, defaultValue: property.initializer ?? implicitDefaultValue(of: property, type: type))
+            }
+    }
+    
+    /// The value that an optional variable starts with when it is not initialized, which Swift also gives the parameter of its memberwise initializer.
+    private static func implicitDefaultValue(of property: Property, type: TypeSyntax) -> InitializerClauseSyntax? {
+        guard !property.isConstant, type.isOptional else { return nil }
+        return InitializerClauseSyntax(equal: .equalToken(leadingTrivia: .space, trailingTrivia: .space), value: NilLiteralExprSyntax())
     }
     
     /// Creates an initializer that takes, and assigns, each of the `properties`.
@@ -102,6 +116,22 @@ public enum memberwiseInitializable: MemberMacro {
         ) {
             for property in properties { property.assignment }
         }
+    }
+    
+}
+
+
+private extension TypeSyntax {
+    
+    /// Whether the type is a closure, ie, `() -> Void`, `@Sendable (Int) -> Int`, and `(() -> Void)`.
+    ///
+    /// An optional closure is not, as it is always escaping.
+    var isFunctionType: Bool {
+        if self.is(FunctionTypeSyntax.self) { return true }
+        if let type = self.as(AttributedTypeSyntax.self) { return type.baseType.isFunctionType }
+        if let type = self.as(TupleTypeSyntax.self), type.elements.count == 1, let element = type.elements.first, element.firstName == nil { return element.type.isFunctionType }
+        
+        return false
     }
     
 }

@@ -8,38 +8,23 @@
 import Foundation
 import SwiftSyntax
 import SwiftSyntaxMacros
+import SwiftDiagnostics
 import MacroEssentials
 
 
-@available(macOS 14.0, iOS 17.0, watchOS 10.0, *)
+@available(macOS 14.0, iOS 17.0, tvOS 17.0, watchOS 10.0, *)
 public enum url: ExpressionMacro {
     
     public static func expansion(of node: some SwiftSyntax.FreestandingMacroExpansionSyntax,
                                  in context: some SwiftSyntaxMacros.MacroExpansionContext
     ) throws -> SwiftSyntax.ExprSyntax {
-        guard let argument = node.arguments.first?.expression,
-              let string = argument.stringLiteralValue
-        else {
-            fatalError("Compiler Bug: The passed argument is not static string")
+        let (argument, string) = try node.stringLiteralArgument()
+        
+        guard URL(string: string, encodingInvalidCharacters: true) != nil else {
+            throw DiagnosticsError("The given string is not an url.", highlighting: argument)
         }
         
-        if URL(string: string, encodingInvalidCharacters: true) != nil {
-            return "URL(string: \(argument), encodingInvalidCharacters: true)!"
-        } else {
-            throw MacroError.notURL
-        }
-    }
-    
-    
-    enum MacroError: CustomStringConvertible, Error {
-        case notURL
-        
-        var description: String {
-            switch self {
-            case .notURL:
-                "The given string is not an url."
-            }
-        }
+        return "URL(string: \(argument), encodingInvalidCharacters: true)!"
     }
     
 }

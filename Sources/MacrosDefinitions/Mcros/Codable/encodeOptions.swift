@@ -33,7 +33,24 @@ public enum encodeOptions: PeerMacro {
             }
         }
         
+        if !isWithinCodable(context: context) {
+            context.diagnose(Diagnostic(
+                node: node,
+                message: .diagnostic(message: "@\(node.attributeName.trimmed) is ignored outside of a type annotated with @codable", diagnosticID: "notWithinCodable", severity: .warning)
+            ))
+        }
+        
         return [] // the macro itself does nothing
+    }
+    
+    /// Whether the type declaring the property is annotated with `@codable`, which reads the options.
+    private static func isWithinCodable(context: some MacroExpansionContext) -> Bool {
+        guard let type = context.lexicalContext.lazy.compactMap({ $0.asProtocol((any DeclGroupSyntax).self) }).first else { return false }
+        
+        return type.attributes.contains { element in
+            guard case .attribute(let attribute) = element else { return false }
+            return attribute.baseName == "codable"
+        }
     }
     
 }

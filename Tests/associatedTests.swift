@@ -68,12 +68,12 @@ final class AssociatedTests: XCTestCase {
                          return () as? T
                      }
                  case .car:
-                     if case let .car(name, make) = self {
-                         return (name, make) as? T
+                     if case let .car(v0, v1) = self {
+                         return (v0, v1) as? T
                      }
                  case .bus:
-                     if case let .bus(length) = self {
-                         return (length) as? T
+                     if case let .bus(v0) = self {
+                         return (v0) as? T
                      }
                  case .bus2:
                      if case let .bus2(v0) = self {
@@ -172,6 +172,60 @@ final class AssociatedTests: XCTestCase {
     }
     
     
+    func testEnumWithoutCasesIsDiagnosed() {
+        assertMacroExpansion(
+            """
+            @accessingAssociatedValues
+            enum Model {
+            }
+            """,
+            expandedSource: """
+            enum Model {
+            }
+            """,
+            diagnostics: [
+                DiagnosticSpec(
+                    message: "@accessingAssociatedValues found no case to generate the accessors for",
+                    line: 1,
+                    column: 1,
+                    fixIts: [
+                        FixItSpec(message: "Remove @accessingAssociatedValues")
+                    ]
+                )
+            ],
+            macros: testMacros
+        )
+    }
+    
+    func testUnsupportedDeclarationIsDiagnosed() {
+        assertMacroExpansion(
+            """
+            @accessingAssociatedValues
+            struct Model {
+            }
+            """,
+            expandedSource: """
+            struct Model {
+            }
+            """,
+            diagnostics: [
+                DiagnosticSpec(
+                    message: "@accessingAssociatedValues should only be applied to `enum`",
+                    line: 1,
+                    column: 1,
+                    fixIts: [
+                        FixItSpec(message: "Remove @accessingAssociatedValues")
+                    ]
+                )
+            ],
+            macros: testMacros
+        )
+    }
+    
+    // MARK: - Compiled Usage
+    
+    // Unlike the expansion tests, these let the compiler expand the macros, and compile the result.
+    
     @accessingAssociatedValues
     enum Model {
         case a
@@ -185,5 +239,54 @@ final class AssociatedTests: XCTestCase {
         #expect(!model.is(.b))
         #expect(model.is(.c))
     }
+    
+    @accessingAssociatedValues
+    enum Shape {
+        case plain
+        case unlabeled(_ value: Int)
+        case mixed(Int, _ name: String)
+        case labeled(default: Int)
+        case labeledTuple(`default`: Int, other: String)
+        case `default`
+    }
+    
+    func testLabelsThatCannotNameAVariable() {
+        #expect(Shape.plain.as(.plain) != nil)
+        #expect(Shape.unlabeled(1).as(.unlabeled) == 1)
+        #expect(Shape.unlabeled(1).as(.plain) == nil)
+        #expect(Shape.mixed(2, "b").as(.mixed)?.0 == 2)
+        #expect(Shape.mixed(2, "b").as(.mixed)?.1 == "b")
+        #expect(Shape.labeled(default: 3).as(.labeled) == 3)
+        #expect(Shape.labeledTuple(default: 4, other: "d").as(.labeledTuple)?.other == "d")
+        #expect(Shape.default.is(.default))
+        #expect(!Shape.plain.is(.default))
+    }
+    
+    func testAccessControlAndGenericsCompile() {
+        #expect(PublicShape.a(1).as(.a) == 1)
+        #expect(PackageShape.a(2).as(.a) == 2)
+        #expect(PackageShape.b.is(.b))
+        #expect(GenericShape.some("s").as(.some) == "s")
+        #expect(GenericShape<Int>.none.is(.none))
+    }
+    
+}
+
+@accessingAssociatedValues
+public enum PublicShape {
+    case a(Int)
+    case b
+}
+
+@accessingAssociatedValues
+package enum PackageShape {
+    case a(Int)
+    case b
+}
+
+@accessingAssociatedValues
+enum GenericShape<Wrapped> {
+    case some(Wrapped)
+    case none
 }
 #endif

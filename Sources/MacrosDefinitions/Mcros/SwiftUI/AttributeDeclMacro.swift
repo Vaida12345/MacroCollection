@@ -11,7 +11,6 @@ import SwiftSyntax
 import SwiftSyntaxMacros
 import SwiftSyntaxBuilder
 import SwiftDiagnostics
-import SwiftCompilerPluginMessageHandling
 import MacroEssentials
 
 
@@ -30,7 +29,7 @@ public enum AttributeDeclMacro: DeclarationMacro {
             macroName = declaration.macroName.text
             arguments = declaration.arguments
         } else {
-            fatalError("Swift Macro Error: input node is not a macro.")
+            throw DiagnosticsError("Expected a macro expansion", highlighting: node)
         }
         
         let wrapperName = macroName.frontToUpper()
@@ -47,10 +46,9 @@ public enum AttributeDeclMacro: DeclarationMacro {
         } else if arguments.allSatisfy({ $0.expression.is(MemberAccessExprSyntax.self) }) { // Model.self
             
             return try arguments.map { argument in
-                guard let type = argument.expression.referencedType?.as(IdentifierTypeSyntax.self) else { throw DiagnosticsError("Expected type reference", highlighting: argument) }
+                guard let type = argument.expression.referencedType, let name = type.referencedName else { throw DiagnosticsError("Expected type reference", highlighting: argument) }
                 
-                
-                return DeclSyntax("@\(raw: wrapperName)(\(type).self) private var \(raw: type.name.text.frontToLower())")
+                return DeclSyntax("@\(raw: wrapperName)(\(type).self) private var \(raw: name.frontToLower())")
             }
         } else {
             if arguments.count > 1 {
@@ -61,6 +59,19 @@ public enum AttributeDeclMacro: DeclarationMacro {
         }
     }
     
+    
+}
+
+
+private extension TypeSyntax {
+    
+    /// The name of the type, without the types it is nested in, ie, `Provider` for `Namespace.Provider`.
+    var referencedName: String? {
+        if let type = self.as(IdentifierTypeSyntax.self) { return type.name.text }
+        if let type = self.as(MemberTypeSyntax.self) { return type.name.text }
+        
+        return nil
+    }
     
 }
 

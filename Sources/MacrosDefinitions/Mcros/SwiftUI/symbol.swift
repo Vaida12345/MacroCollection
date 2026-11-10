@@ -8,8 +8,13 @@
 import Foundation
 import SwiftSyntax
 import SwiftSyntaxMacros
-import SwiftUI
+import SwiftDiagnostics
 import MacroEssentials
+#if canImport(UIKit)
+import UIKit
+#else
+import AppKit
+#endif
 
 
 public enum symbol: ExpressionMacro {
@@ -17,32 +22,15 @@ public enum symbol: ExpressionMacro {
     public static func expansion(of node: some SwiftSyntax.FreestandingMacroExpansionSyntax,
                                  in context: some SwiftSyntaxMacros.MacroExpansionContext
     ) throws -> SwiftSyntax.ExprSyntax {
-        guard let argument = node.arguments.first?.expression,
-              let name = argument.stringLiteralValue
-        else {
-            fatalError("Compiler Bug: The passed argument is not static string")
-        }
-        
+        let (argument, name) = try node.stringLiteralArgument()
         
 #if canImport(UIKit)
-        guard UIImage(systemName: name) != nil else { throw MacroError.noSuchSymbol(name) }
+        guard UIImage(systemName: name) != nil else { throw DiagnosticsError("No such symbol `\(name)`.", highlighting: argument) }
 #else
-        guard NSImage(systemSymbolName: name, accessibilityDescription: nil) != nil else { throw MacroError.noSuchSymbol(name) }
+        guard NSImage(systemSymbolName: name, accessibilityDescription: nil) != nil else { throw DiagnosticsError("No such symbol `\(name)`.", highlighting: argument) }
 #endif
         
         return argument
-    }
-    
-    
-    enum MacroError: CustomStringConvertible, Error {
-        case noSuchSymbol(String)
-        
-        var description: String {
-            switch self {
-            case let .noSuchSymbol(string):
-                "No such symbol `\(string)`."
-            }
-        }
     }
     
 }

@@ -43,7 +43,7 @@ https://github.com/Vaida12345/MacroCollection.git
 A set of macros aiming to extend the functionality of Swift
 
 - ``accessingAssociatedValues()``
-- ``codable()``
+- ``codable(_:)``
 - ``memberwiseInitializable(_:)``
 
 ### SwiftUI

@@ -17,6 +17,10 @@ public struct CodableOptions: OptionSet, Sendable {
     
     /// Specifies that implementation should override conformance to `Codable` by superclass.
     ///
+    /// The generated code encodes and decodes the properties of the class, and leaves the others to the superclass by calling `super.init(from:)` and `super.encode(to:)`.
+    ///
+    /// A class whose superclass is `Codable` is detected automatically, hence this option only states it explicitly.
+    ///
     /// If the declaration is not a class, this option is ignored.
     public static let `override` = CodableOptions(rawValue: 1 << 0)
     

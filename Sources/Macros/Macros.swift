@@ -10,7 +10,7 @@ import Foundation
 
 /// Generates the methods required by `Codable` for the stored properties.
 ///
-/// Apply this macro to a class to generate memberwise codable conformances.
+/// Apply this macro to a struct or a class to generate memberwise codable conformances.
 /// ```swift
 /// @codable
 /// class Cat {
@@ -27,6 +27,12 @@ import Foundation
 /// ```
 ///
 /// Please note that any non-assignable values are ignored.
+///
+/// The generated declarations are as accessible as the type, except that the initializer and the `CodingKeys` of an `open` class are `public`, as neither can be `open`. Those of a struct are declared in an extension, hence the memberwise initializer of the struct is kept.
+///
+/// ## Optional values
+///
+/// Like the code synthesized by Swift, an optional property is decoded using `decodeIfPresent`, hence its key may be missing. Its `nil` is encoded as `null`, use ``AttributeEncodeOptions/encodeIfPresent`` to leave the key out instead.
 ///
 /// ## Transient values
 /// To ignore value explicitly, use the ``transient()`` macro.
@@ -54,6 +60,16 @@ import Foundation
 /// There are a few other options that can be accessed using ``encodeOptions(_:)``. For a list of options, see ``AttributeEncodeOptions``.
 ///
 /// A backdoor was made for function with signature `static? func postDecodeAction() throws?`. Such function will be appended to the end of generated decode implementation if present.
+///
+/// ## Subclasses
+///
+/// A class whose superclass is `Codable` encodes and decodes its own properties only, and leaves the others to the superclass: the generated code calls `super.init(from:)` and `super.encode(to:)`. This is detected automatically, and ``CodableOptions/override`` states it explicitly.
+/// ```swift
+/// @codable
+/// class Child: Parent {
+///     var tricks: [String]
+/// }
+/// ```
 ///
 /// - Parameters:
 ///   - options: Options for encoding and decoding, see ``CodableOptions``.
@@ -64,75 +80,14 @@ import Foundation
 /// - ``transient()``
 /// - ``encodeOptions(_:)``
 /// - ``CodableOptions``
-@attached(extension, conformances: Codable, names: named(encode(to:)), named(CodingKeys))
-@attached(member, names: named(init), named(encode(to:)), named(CodingKeys))
+@attached(extension, conformances: Codable, names: named(init), named(encode(to:)), named(CodingKeys))
+@attached(member, conformances: Codable, names: named(init), named(encode(to:)))
 public macro codable(_ options: CodableOptions...) = #externalMacro(module: "MacrosDefinitions", type: "codable")
-
-
-/// Generates the methods required by `Codable` for the stored properties.
-///
-/// Apply this macro to a class to generate memberwise codable conformances.
-/// ```swift
-/// @codable
-/// class Cat {
-///     let name: String = "cat"
-///     let age: Int
-/// }
-/// ```
-///
-/// This above macro would expand to the following:
-/// ```swift
-/// enum CodingKeys: CodingKey { ... }
-/// func encode(to encoder: Encoder) throws { ... }
-/// required init(from decoder: Decoder) throws { ... }
-/// ```
-///
-/// Please note that any non-assignable values are ignored.
-///
-/// ## Transient values
-/// To ignore value explicitly, use the ``transient()`` macro.
-/// ```swift
-/// @codable
-/// class Cat {
-///     let name: String
-///
-///     @transient
-///     let age: Int
-/// }
-/// ```
-///
-/// In the generated `CodingKeys`, the `transient()` annotated property `age` is ignored.
-/// ```swift
-/// enum CodingKeys: CodingKey {
-///     case name
-/// }
-/// ```
-///
-/// The other generated codes are updated according.
-///
-/// ## Additional Options
-///
-/// There are a few other options that can be accessed using ``encodeOptions(_:)``. For a list of options, see ``AttributeEncodeOptions``.
-///
-/// A backdoor was made for function with signature `static? func postDecodeAction() throws?`. Such function will be appended to the end of generated decode implementation if present.
-///
-/// ## Codable with Options.
-///
-/// Sometimes you have to specify additional coding options to compile properly. For example, you can use the ``CodableOptions/override`` to encode and decode a child class.
-///
-/// ## Topics
-///
-/// ### Controlling Encode
-/// - ``transient()``
-/// - ``encodeOptions(_:)``
-@attached(extension, conformances: Codable, names: named(encode(to:)), named(CodingKeys))
-@attached(member, names: named(init), named(encode(to:)), named(CodingKeys))
-public macro codable() = #externalMacro(module: "MacrosDefinitions", type: "codable")
 
 
 /// Tells `@codable` macro not to persist the annotated property.
 ///
-/// This macro must be used within the ``codable()`` annotated class.
+/// This macro must be used within the ``codable(_:)`` annotated class.
 /// ```swift
 /// @codable
 /// class Cat {
@@ -157,7 +112,7 @@ public macro transient() = #externalMacro(module: "MacrosDefinitions", type: "tr
 
 /// Tells `@codable` macro the additional options for encoding and decoding.
 ///
-/// This macro must be used within the ``codable()`` annotated class.
+/// This macro must be used within the ``codable(_:)`` annotated class.
 /// ```swift
 /// @codable
 /// class Cat {
@@ -204,6 +159,8 @@ public macro encodeOptions(_ options: AttributeEncodeOptions...) = #externalMacr
 ///
 /// Sometimes, type cannot be inferred, such as the ones assigned by calling functions. In this case, an error will be emitted asking to declare type explicitly.
 ///
+/// Like the memberwise initializer synthesized by Swift, an optional variable that is not initialized defaults to `nil`, and a property of a closure type is taken as an `@escaping` parameter. A closure type that is spelled by a typealias cannot be recognized, write that initializer yourself.
+///
 /// An initializer is not generated if the type already declares one with the same argument labels and types.
 ///
 /// ## Access Control
@@ -242,13 +199,15 @@ public macro memberwiseInitializable(_ accessControl: AccessControl? = nil) = #e
 ///
 /// This macro would produce compile errors if an url cannot be produced using give string.
 /// ```swift
-/// #url("cat")
+/// #url("")
 /// // error: The given string is not an url.
 /// ```
 ///
 /// - Note: This function automatically IDNA and percent encode any invalid characters.
+///
+/// - Note: A string without a scheme, such as `"cat"`, is a valid relative url.
 @freestanding(expression)
-@available(macOS 14.0, iOS 17.0, watchOS 10.0, *)
+@available(macOS 14.0, iOS 17.0, tvOS 17.0, watchOS 10.0, *)
 public macro url(_ string: StaticString) -> URL = #externalMacro(module: "MacrosDefinitions", type: "url")
 
 
@@ -271,6 +230,8 @@ public macro url(_ string: StaticString) -> URL = #externalMacro(module: "Macros
 /// ```
 ///
 /// The `key` and `cipher` are different for each build, and these implementation details are completely hidden under the hood, users can treat `#encrypt("hello world")` as `"hello world"`.
+///
+/// - Important: This only keeps the string out of plain sight in the build product, it does not keep it secret: the key is stored right next to the cipher text.
 @freestanding(expression)
 public macro encrypt(_ string: StaticString) -> String = #externalMacro(module: "MacrosDefinitions", type: "encrypt")
 
@@ -282,6 +243,8 @@ public macro encrypt(_ string: StaticString) -> String = #externalMacro(module: 
 /// Image(systemName: #symbol("macro"))
 /// // error: No such symbol `macro`.
 /// ```
+///
+/// - Note: The symbol is looked up on the machine building your code. A symbol that is newer than your deployment target passes the check.
 @freestanding(expression)
 public macro symbol(_ name: StaticString) -> String = #externalMacro(module: "MacrosDefinitions", type: "symbol")
 
@@ -364,5 +327,7 @@ public macro environment<each Value>(_ contents: repeat (each Value).Type) = #ex
 /// ```
 ///
 /// The body for these two functions are exactly the same.
-@attached(peer, names: arbitrary)
+///
+/// Only the parameters declared exactly as the source type are varied, and their default values are not copied, since they are written for the source type.
+@attached(peer, names: overloaded)
 public macro varyArgumentType<T, U>(_ sourceType: T.Type, variation: U.Type) = #externalMacro(module: "MacrosDefinitions", type: "varyArgumentType")

@@ -8,7 +8,7 @@ A collection of macros.
 A set of macros aiming to extend the functionality of Swift
 
 - ``accessingAssociatedValues()``
-- ``codable()``
+- ``codable(_:)``
 - ``memberwiseInitializable(_:)``
 
 ### SwiftUI
