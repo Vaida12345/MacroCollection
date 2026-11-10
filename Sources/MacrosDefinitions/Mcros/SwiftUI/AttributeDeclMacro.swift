@@ -12,6 +12,7 @@ import SwiftSyntaxMacros
 import SwiftSyntaxBuilder
 import SwiftDiagnostics
 import SwiftCompilerPluginMessageHandling
+import MacroEssentials
 
 
 public enum AttributeDeclMacro: DeclarationMacro {
@@ -46,12 +47,10 @@ public enum AttributeDeclMacro: DeclarationMacro {
         } else if arguments.allSatisfy({ $0.expression.is(MemberAccessExprSyntax.self) }) { // Model.self
             
             return try arguments.map { argument in
-                guard let expression = argument.expression.as(MemberAccessExprSyntax.self) else { throw DiagnosticsError("Expression is invalid", highlighting: argument) }
-                guard expression.declName.baseName.isEqual(to: "self") else { throw DiagnosticsError("Expected type reference", highlighting: argument) }
+                guard let type = argument.expression.referencedType?.as(IdentifierTypeSyntax.self) else { throw DiagnosticsError("Expected type reference", highlighting: argument) }
                 
-                guard let identifier = expression.base?.as(DeclReferenceExprSyntax.self) else { throw DiagnosticsError("Expected type reference", highlighting: argument) }
                 
-                return DeclSyntax("@\(raw: wrapperName)(\(identifier).self) private var \(raw: identifier.baseName.text.frontToLower())")
+                return DeclSyntax("@\(raw: wrapperName)(\(type).self) private var \(raw: type.name.text.frontToLower())")
             }
         } else {
             if arguments.count > 1 {

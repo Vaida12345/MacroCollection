@@ -9,6 +9,7 @@ import Foundation
 import SwiftSyntax
 import SwiftSyntaxMacros
 import CryptoKit
+import MacroEssentials
 
 
 public enum encrypt: ExpressionMacro {
@@ -16,18 +17,11 @@ public enum encrypt: ExpressionMacro {
     public static func expansion(of node: some SwiftSyntax.FreestandingMacroExpansionSyntax,
                                  in context: some SwiftSyntaxMacros.MacroExpansionContext
     ) throws -> SwiftSyntax.ExprSyntax {
-        guard let argument = node.arguments.first?.expression,
-              let segments = argument.as(StringLiteralExprSyntax.self)?.segments
-        else {
+        guard let plainText = node.arguments.first?.expression.stringLiteralValue else {
             fatalError("Compiler Bug: The passed argument is not static string")
         }
         
-        let stringSegments = segments.compactMap({ (input: StringLiteralSegmentListSyntax.Element?) -> StringSegmentSyntax? in
-            guard case .stringSegment(let segment)? = input else { return nil }
-            return segment
-        })
         
-        let plainText = stringSegments.map(\.content.text).joined()
         let key = SymmetricKey(size: .bits256)
         
         let cipher = try AES.GCM.seal(plainText.data(using: .utf8)!, using: key).combined!

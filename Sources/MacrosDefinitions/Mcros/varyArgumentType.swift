@@ -11,6 +11,7 @@ import SwiftSyntaxMacros
 import SwiftSyntaxBuilder
 import SwiftDiagnostics
 import SwiftCompilerPluginMessageHandling
+import MacroEssentials
 
 
 public enum varyArgumentType: PeerMacro {
@@ -25,20 +26,17 @@ public enum varyArgumentType: PeerMacro {
                 throw DiagnosticsError.shouldRemoveMacro(attributes: nil, node: node, message: "`@varyArgumentType` does not work with generics")
             }
             
-            guard let attributeArgList = node.arguments?.as(LabeledExprListSyntax.self),
-                  let sourceExpr = attributeArgList.first?.expression.as(MemberAccessExprSyntax.self),
-                  let source = sourceExpr.base,
-                  let destExpr = attributeArgList.last?.expression.as(MemberAccessExprSyntax.self),
-                  let dest = destExpr.base
-            else { fatalError("Invalid attribute arguments") }
+            guard let source = node.argumentList.first?.expression.referencedType,
+                  let dest = node.argumentList.last?.expression.referencedType
+            else { throw DiagnosticsError("Expected the types to vary, eg, `String.self`.", highlighting: node) }
             
             var parameters = declaration.signature.parameterClause.parameters
             var index = parameters.startIndex
             
             while index < parameters.endIndex {
                 let parameter = parameters[index]
-                if parameter.type.description == source.description {
-                    parameters[index].type = .init(IdentifierTypeSyntax.identifier("\(dest)"))
+                if parameter.type.trimmedDescription == source.description {
+                    parameters[index].type = dest
                 }
                 
                 parameters.formIndex(after: &index)
@@ -56,20 +54,17 @@ public enum varyArgumentType: PeerMacro {
                 throw DiagnosticsError.shouldRemoveMacro(attributes: nil, node: node, message: "`@varyArgumentType` does not work with generics")
             }
             
-            guard let attributeArgList = node.arguments?.as(LabeledExprListSyntax.self),
-                  let sourceExpr = attributeArgList.first?.expression.as(MemberAccessExprSyntax.self),
-                  let source = sourceExpr.base,
-                  let destExpr = attributeArgList.last?.expression.as(MemberAccessExprSyntax.self),
-                  let dest = destExpr.base
-            else { fatalError("Invalid attribute arguments") }
+            guard let source = node.argumentList.first?.expression.referencedType,
+                  let dest = node.argumentList.last?.expression.referencedType
+            else { throw DiagnosticsError("Expected the types to vary, eg, `String.self`.", highlighting: node) }
             
             var parameters = declaration.signature.parameterClause.parameters
             var index = parameters.startIndex
             
             while index < parameters.endIndex {
                 let parameter = parameters[index]
-                if parameter.type.description == source.description {
-                    parameters[index].type = .init(IdentifierTypeSyntax.identifier("\(dest)"))
+                if parameter.type.trimmedDescription == source.description {
+                    parameters[index].type = dest
                 }
                 
                 parameters.formIndex(after: &index)

@@ -8,6 +8,7 @@
 import Foundation
 import SwiftSyntax
 import SwiftSyntaxMacros
+import MacroEssentials
 
 
 @available(macOS 14.0, iOS 17.0, watchOS 10.0, *)
@@ -17,14 +18,12 @@ public enum url: ExpressionMacro {
                                  in context: some SwiftSyntaxMacros.MacroExpansionContext
     ) throws -> SwiftSyntax.ExprSyntax {
         guard let argument = node.arguments.first?.expression,
-              let segments = argument.as(StringLiteralExprSyntax.self)?.segments,
-              segments.count == 1,
-              case .stringSegment(let segment)? = segments.first
+              let string = argument.stringLiteralValue
         else {
             fatalError("Compiler Bug: The passed argument is not static string")
         }
         
-        if URL(string: segment.content.text, encodingInvalidCharacters: true) != nil {
+        if URL(string: string, encodingInvalidCharacters: true) != nil {
             return "URL(string: \(argument), encodingInvalidCharacters: true)!"
         } else {
             throw MacroError.notURL

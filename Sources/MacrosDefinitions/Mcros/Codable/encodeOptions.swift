@@ -22,14 +22,13 @@ public enum encodeOptions: PeerMacro {
             throw DiagnosticsError.shouldRemoveMacro(attributes: nil, node: node, message: "@\(node.attributeName) can only attached to a variable declaration")
         }
         
-        for binding in variable.bindings {
-            let type = PropertyType(of: variable)
+        for property in variable.properties {
             
-            if type == .computed {
-                throw DiagnosticsError.shouldRemoveMacro(attributes: variable.attributes, node: node, message: "@\(node.attributeName) cannot be applied to a computed property")
-            } else if type.isStatic {
+            if property.isStatic {
                 throw DiagnosticsError.shouldRemoveMacro(attributes: variable.attributes, node: node, message: "@\(node.attributeName) cannot be applied to a static property")
-            } else if (type == .staticConstant || type == .storedConstant) && binding.initializer != nil {
+            } else if property.storage == .computed {
+                throw DiagnosticsError.shouldRemoveMacro(attributes: variable.attributes, node: node, message: "@\(node.attributeName) cannot be applied to a computed property")
+            } else if property.isConstant && property.initializer != nil {
                 throw DiagnosticsError.shouldRemoveMacro(attributes: variable.attributes, node: node, message: "@\(node.attributeName) cannot be applied to a constant that cannot be changed")
             }
         }

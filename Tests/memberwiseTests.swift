@@ -18,9 +18,9 @@ fileprivate let testMacros: [String: any Macro.Type] = [
 
 
 final class MemberwiseInitializableTests: XCTestCase {
-
+    
     // MARK: - Generated Members
-
+    
     func testClass() {
         assertMacroExpansion(
             """
@@ -43,7 +43,7 @@ final class MemberwiseInitializableTests: XCTestCase {
             macros: testMacros
         )
     }
-
+    
     func testStruct() {
         assertMacroExpansion(
             """
@@ -67,7 +67,7 @@ final class MemberwiseInitializableTests: XCTestCase {
             macros: testMacros
         )
     }
-
+    
     func testActor() {
         assertMacroExpansion(
             """
@@ -88,7 +88,7 @@ final class MemberwiseInitializableTests: XCTestCase {
             macros: testMacros
         )
     }
-
+    
     func testAllPropertiesHaveDefaultValues() {
         assertMacroExpansion(
             """
@@ -115,7 +115,7 @@ final class MemberwiseInitializableTests: XCTestCase {
             macros: testMacros
         )
     }
-
+    
     func testNoStoredProperties() {
         assertMacroExpansion(
             """
@@ -133,7 +133,7 @@ final class MemberwiseInitializableTests: XCTestCase {
             macros: testMacros
         )
     }
-
+    
     func testNonStoredPropertiesAreIgnored() {
         assertMacroExpansion(
             """
@@ -162,7 +162,7 @@ final class MemberwiseInitializableTests: XCTestCase {
             macros: testMacros
         )
     }
-
+    
     func testBackticksArePreserved() {
         assertMacroExpansion(
             """
@@ -186,7 +186,7 @@ final class MemberwiseInitializableTests: XCTestCase {
             macros: testMacros
         )
     }
-
+    
     func testTrailingCommentsAreNotCopiedIntoTheSignature() {
         assertMacroExpansion(
             """
@@ -213,9 +213,152 @@ final class MemberwiseInitializableTests: XCTestCase {
             macros: testMacros
         )
     }
+    
+    func testSignedLiteralsAreInferred() {
+        assertMacroExpansion(
+            """
+            @memberwiseInitializable
+            struct Cat {
+                var index = -1
+            }
+            """,
+            expandedSource: """
+            struct Cat {
+                var index = -1
 
+                init(index: Int = -1) {
+                    self.index = index
+                }
+
+                init() {
+                }
+            }
+            """,
+            macros: testMacros
+        )
+    }
+    
+    func testSharedTypeAnnotation() {
+        assertMacroExpansion(
+            """
+            @memberwiseInitializable
+            struct Cat {
+                var a, b: Int
+            }
+            """,
+            expandedSource: """
+            struct Cat {
+                var a, b: Int
+
+                init(a: Int, b: Int) {
+                    self.a = a
+                    self.b = b
+                }
+            }
+            """,
+            macros: testMacros
+        )
+    }
+    
+    func testTupleTypesKeepTheirLabels() {
+        assertMacroExpansion(
+            """
+            @memberwiseInitializable
+            struct Cat {
+                var point = (x: 1, y: 2)
+            }
+            """,
+            expandedSource: """
+            struct Cat {
+                var point = (x: 1, y: 2)
+
+                init(point: (x: Int, y: Int) = (x: 1, y: 2)) {
+                    self.point = point
+                }
+
+                init() {
+                }
+            }
+            """,
+            macros: testMacros
+        )
+    }
+    
+    func testTypesSpelledByTheInitializerAreInferred() {
+        assertMacroExpansion(
+            """
+            @memberwiseInitializable
+            struct Cat {
+                var items = [String]()
+                var ids = Set<Int>()
+            }
+            """,
+            expandedSource: """
+            struct Cat {
+                var items = [String]()
+                var ids = Set<Int>()
+
+                init(items: [String] = [String](), ids: Set<Int> = Set<Int>()) {
+                    self.items = items
+                    self.ids = ids
+                }
+
+                init() {
+                }
+            }
+            """,
+            macros: testMacros
+        )
+    }
+    
+    func testOverriddenObserversAreNotAssigned() {
+        assertMacroExpansion(
+            """
+            @memberwiseInitializable
+            class Dog: Animal {
+                var tricks: [String]
+                override var name: String { didSet { print(name) } }
+            }
+            """,
+            expandedSource: """
+            class Dog: Animal {
+                var tricks: [String]
+                override var name: String { didSet { print(name) } }
+
+                init(tricks: [String]) {
+                    self.tricks = tricks
+                }
+            }
+            """,
+            macros: testMacros
+        )
+    }
+    
+    func testComputedAccessorsAreNotAssigned() {
+        assertMacroExpansion(
+            """
+            @memberwiseInitializable
+            struct Cat {
+                var _age: Int
+                var age: Int { _read { yield _age } }
+            }
+            """,
+            expandedSource: """
+            struct Cat {
+                var _age: Int
+                var age: Int { _read { yield _age } }
+
+                init(_age: Int) {
+                    self._age = _age
+                }
+            }
+            """,
+            macros: testMacros
+        )
+    }
+    
     // MARK: - Existing Initializers
-
+    
     func testExistingInitializerWithSameSignatureSuppressesGeneration() {
         assertMacroExpansion(
             """
@@ -244,7 +387,7 @@ final class MemberwiseInitializableTests: XCTestCase {
             macros: testMacros
         )
     }
-
+    
     func testExistingInitializerWithRenamedParameterSuppressesGeneration() {
         // `init(name n:)` and `init(name:)` share the argument label, so they would be redeclarations of each other.
         assertMacroExpansion(
@@ -264,7 +407,7 @@ final class MemberwiseInitializableTests: XCTestCase {
             macros: testMacros
         )
     }
-
+    
     func testExistingInitializersWithDifferentSignaturesDoNotSuppressGeneration() {
         assertMacroExpansion(
             """
@@ -289,7 +432,7 @@ final class MemberwiseInitializableTests: XCTestCase {
             macros: testMacros
         )
     }
-
+    
     func testParameterOrderIsPartOfTheSignature() {
         assertMacroExpansion(
             """
@@ -315,7 +458,7 @@ final class MemberwiseInitializableTests: XCTestCase {
             macros: testMacros
         )
     }
-
+    
     func testExistingEmptyInitializerSuppressesSynthesizedEmptyInitializer() {
         assertMacroExpansion(
             """
@@ -340,9 +483,9 @@ final class MemberwiseInitializableTests: XCTestCase {
             macros: testMacros
         )
     }
-
+    
     // MARK: - Access Control
-
+    
     func testPublicAccessControl() {
         assertMacroExpansion(
             """
@@ -369,7 +512,7 @@ final class MemberwiseInitializableTests: XCTestCase {
             macros: testMacros
         )
     }
-
+    
     func testInternalAccessControl() {
         assertMacroExpansion(
             """
@@ -390,7 +533,7 @@ final class MemberwiseInitializableTests: XCTestCase {
             macros: testMacros
         )
     }
-
+    
     func testPrivateAccessControl() {
         assertMacroExpansion(
             """
@@ -414,7 +557,7 @@ final class MemberwiseInitializableTests: XCTestCase {
             macros: testMacros
         )
     }
-
+    
     func testAccessControlOnClass() {
         assertMacroExpansion(
             """
@@ -438,7 +581,7 @@ final class MemberwiseInitializableTests: XCTestCase {
             macros: testMacros
         )
     }
-
+    
     func testAccessControlOnActor() {
         assertMacroExpansion(
             """
@@ -462,7 +605,7 @@ final class MemberwiseInitializableTests: XCTestCase {
             macros: testMacros
         )
     }
-
+    
     func testNilAccessControlLeavesAccessUnspecified() {
         assertMacroExpansion(
             """
@@ -483,7 +626,7 @@ final class MemberwiseInitializableTests: XCTestCase {
             macros: testMacros
         )
     }
-
+    
     func testAccessControlWrittenWithItsType() {
         assertMacroExpansion(
             """
@@ -504,9 +647,9 @@ final class MemberwiseInitializableTests: XCTestCase {
             macros: testMacros
         )
     }
-
+    
     // MARK: - Diagnostics
-
+    
     func testNonLiteralAccessControlIsDiagnosed() {
         assertMacroExpansion(
             """
@@ -522,7 +665,7 @@ final class MemberwiseInitializableTests: XCTestCase {
             """,
             diagnostics: [
                 DiagnosticSpec(
-                    message: "The access control must be written as a literal, such as `.public`, `.internal`, or `.private`.",
+                    message: "Expected one of `.public`, `.internal`, `.private`",
                     line: 1,
                     column: 26
                 )
@@ -530,7 +673,7 @@ final class MemberwiseInitializableTests: XCTestCase {
             macros: testMacros
         )
     }
-
+    
     func testUnsupportedDeclarationIsDiagnosed() {
         assertMacroExpansion(
             """
@@ -557,41 +700,41 @@ final class MemberwiseInitializableTests: XCTestCase {
             macros: testMacros
         )
     }
-
+    
     // MARK: - Compiled Usage
-
+    
     // Classes, unlike structs, have no implicit memberwise initializer. Hence these only compile when the macros are expanded.
-
+    
     @memberwiseInitializable
     final class DefaultAccess {
         var a: Int
         var b = "b"
     }
-
+    
     @memberwiseInitializable(.public)
     final class PublicAccess {
         var a: Int = 1
     }
-
+    
     @memberwiseInitializable(.private)
     final class PrivateAccess {
         var a: Int = 1
-
+        
         static func make(a: Int) -> PrivateAccess { PrivateAccess(a: a) }
         static func make() -> PrivateAccess { PrivateAccess() }
     }
-
+    
     /// Unlike the expansion tests, this one lets the compiler expand the macros, and compile the result.
     func testGeneratedInitializersCompile() {
         XCTAssertEqual(DefaultAccess(a: 1).b, "b")
         XCTAssertEqual(DefaultAccess(a: 1, b: "c").b, "c")
-
+        
         XCTAssertEqual(PublicAccess().a, 1)
         XCTAssertEqual(PublicAccess(a: 2).a, 2)
-
+        
         XCTAssertEqual(PrivateAccess.make().a, 1)
         XCTAssertEqual(PrivateAccess.make(a: 2).a, 2)
     }
-
+    
 }
 #endif

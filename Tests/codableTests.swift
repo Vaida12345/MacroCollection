@@ -316,7 +316,7 @@ final class CodableTests: XCTestCase {
             
                 init(from decoder: Decoder) throws {
                     let container = try decoder.container(keyedBy: CodingKeys.self)
-                    self.name = try container.decodeIfPresent(String? .self, forKey: .name) ?? nil
+                    self.name = try container.decodeIfPresent(String?.self, forKey: .name) ?? nil
                 }
             
             }
@@ -376,6 +376,40 @@ final class CodableTests: XCTestCase {
                 
                 }
                 """,
+            macros: testMacros
+        )
+    }
+    
+    func testTrailingCommentsAreNotCopiedIntoTheDecoder() {
+        assertMacroExpansion(
+            """
+            @codable
+            struct Cat {
+                var name: String // the name
+            }
+            """,
+            expandedSource: """
+            struct Cat {
+                var name: String // the name
+
+                init(from decoder: Decoder) throws {
+                    let container = try decoder.container(keyedBy: CodingKeys.self)
+                    self.name = try container.decode(String.self, forKey: .name)
+                }
+            }
+
+            extension Cat: Codable {
+
+                enum CodingKeys: CodingKey {
+                    case name
+                }
+
+                func encode(to encoder: Encoder) throws {
+                    var container = encoder.container(keyedBy: CodingKeys.self)
+                    try container.encode(self.name, forKey: .name)
+                }
+            }
+            """,
             macros: testMacros
         )
     }

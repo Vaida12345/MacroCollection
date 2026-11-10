@@ -20,11 +20,7 @@ public enum codable: ExtensionMacro, MemberMacro {
         return decl.attributes.contains(where: { attribute in
             guard case .attribute(let attribute) = attribute else { return false }
             guard attribute.attributeName.as(IdentifierTypeSyntax.self)?.name.isEqual(to: "codable") ?? false else { return false }
-            guard let args = attribute.arguments else { return false }
-            return args.children(viewMode: .sourceAccurate).contains { syntax in
-                guard let expr = syntax.as(LabeledExprSyntax.self)?.expression.as(MemberAccessExprSyntax.self) else { return false }
-                return expr.declName.baseName.isEqual(to: "override")
-            }
+            return attribute.argumentList.contains { $0.expression.memberName == "override" }
         })
     }
     
@@ -80,7 +76,8 @@ public enum codable: ExtensionMacro, MemberMacro {
             return parameter.firstName.text == "to" && parameter.type.as(IdentifierTypeSyntax.self)?.name.text == "Encoder"
         }) else { return nil } // `encode` already exists
         
-        let lines = try memberwiseMap(for: declaration) { variable, decl, name, additionalInfo in
+        let lines = try memberwiseMap(for: declaration) { property, additionalInfo in
+            let name = property.name
             let syntax: CodeBlockItemSyntax
             
             if additionalInfo.encodeIfNoneDefault, let defaultValue = additionalInfo.defaultValue {
@@ -89,7 +86,7 @@ public enum codable: ExtensionMacro, MemberMacro {
                     try container.encodeIfPresent(self.\(raw: name), forKey: .\(raw: name))
                 }
                 """
-            } else if try additionalInfo.encodeOptionalAsIfPresent && variable.inferredType(in: decl).isOptional {
+            } else if try additionalInfo.encodeOptionalAsIfPresent && property.type().isOptional {
                 syntax = "try container.encodeIfPresent(self.\(raw: name), forKey: .\(raw: name))"
             } else {
                 syntax = "try container.encode(self.\(raw: name), forKey: .\(raw: name))"
@@ -137,13 +134,14 @@ public enum codable: ExtensionMacro, MemberMacro {
             return parameter.firstName.text == "from" && parameter.type.as(IdentifierTypeSyntax.self)?.name.text == "Decoder"
         }) else { return nil } // `decode` already exists
         
-        let lines = try memberwiseMap(for: declaration) { variable, decl, name, additionalInfo in
+        let lines = try memberwiseMap(for: declaration) { property, additionalInfo in
+            let name = property.name
             let syntax: CodeBlockItemSyntax
-            let type = try variable.inferredType(in: decl)
+            let type = try property.type()
             
             if additionalInfo.encodeIfNoneDefault, let defaultValue = additionalInfo.defaultValue {
                 syntax = "self.\(raw: name) = try container.decodeIfPresent(\(type).self, forKey: .\(raw: name)) ?? \(raw: defaultValue)"
-            } else if try additionalInfo.encodeOptionalAsIfPresent && variable.inferredType(in: decl).isOptional {
+            } else if try additionalInfo.encodeOptionalAsIfPresent && property.type().isOptional {
                 syntax = "self.\(raw: name) = try container.decodeIfPresent(\(type).self, forKey: .\(raw: name))"
             } else {
                 syntax = "self.\(raw: name) = try container.decode(\(type).self, forKey: .\(raw: name))"
@@ -205,8 +203,8 @@ public enum codable: ExtensionMacro, MemberMacro {
             
         }) else { return nil } // `CodingKeys` already exists
         
-        let members = memberwiseMap(for: declaration) { variable, variables, name, additionalInfo  in
-            let caseDecl = EnumCaseDeclSyntax(elements: [EnumCaseElementSyntax(name: variable.pattern.as(IdentifierPatternSyntax.self)!.identifier)])
+        let members = try memberwiseMap(for: declaration) { property, additionalInfo in
+            let caseDecl = EnumCaseDeclSyntax(elements: [EnumCaseElementSyntax(name: property.identifier)])
             return MemberBlockItemSyntax(decl: caseDecl)
         }
         
@@ -218,17 +216,16 @@ public enum codable: ExtensionMacro, MemberMacro {
     
     static func memberwiseMap<T>(
         for declaration: some SwiftSyntax.DeclGroupSyntax,
-        handler: (_ variable: PatternBindingListSyntax.Element, _ decl: VariableDeclSyntax, _ name: String, _ additionalInfo: AdditionalInfo) throws -> T?
-    ) rethrows -> [T] {
-        return try declaration.mapProperties { variable, decl, name, type in
-            guard type != .computed && !type.isStatic && !((type == .staticConstant || type == .storedConstant) && variable.initializer != nil) else { return nil }
+        handler: (_ property: Property, _ additionalInfo: AdditionalInfo) throws -> T?
+    ) throws -> [T] {
+        return try declaration.properties.filter(\.isMemberwiseInitializable).compactMap { property in
             
             var isIgnored = false
             var warnNonNilEncodeIfPresent = false
             var encodeOptionsArgsCount = 0
             var additionalInfo = AdditionalInfo()
             
-            for attribute in decl.attributes {
+            for attribute in property.declaration.attributes {
                 guard let attribute = attribute.as(AttributeSyntax.self),
                       let attributeName = attribute.attributeName.as(IdentifierTypeSyntax.self) else { continue }
                 if attributeName.name.text == "transient" { isIgnored = true }
@@ -240,7 +237,7 @@ public enum codable: ExtensionMacro, MemberMacro {
                             if memberName == "ignored" {
                                 isIgnored = true
                             } else if memberName == "encodeIfPresent" {
-                                if try !variable.inferredType(in: decl).isOptional {
+                                if try !property.type().isOptional {
                                     warnNonNilEncodeIfPresent = true
                                 } else {
                                     additionalInfo.encodeOptionalAsIfPresent = true
@@ -253,22 +250,22 @@ public enum codable: ExtensionMacro, MemberMacro {
                 }
             }
             
-            if let initializer = variable.initializer {
+            if let initializer = property.initializer {
                 additionalInfo.defaultValue = initializer.value
             }
             
             if isIgnored {
-                guard variable.initializer == nil else { return nil }
-                throw DiagnosticsError("A default value must be provided for transient values.", highlighting: variable,
-                                       replacing: variable, message: "Provide a default value") { replacement in
+                guard property.initializer == nil else { return nil }
+                throw DiagnosticsError("A default value must be provided for transient values.", highlighting: property.binding,
+                                       replacing: property.binding, message: "Provide a default value") { replacement in
                     replacement.initializer = InitializerClauseSyntax(equal: .equalToken(leadingTrivia: .space, trailingTrivia: .space),
                                                                       value: EditorPlaceholderExprSyntax(placeholder: .identifier("<#default value#>")))
                 }
             } else if warnNonNilEncodeIfPresent {
                 if encodeOptionsArgsCount == 1 {
-                    throw DiagnosticsError("`encodeIfPresent` can only be applied to optional values.", highlighting: variable,
-                                           replacing: decl.attributes, message: "Remove the `codeOptions` macro`") { replacement in
-                        replacement = AttributeListSyntax(decl.attributes.drop { attribute in
+                    throw DiagnosticsError("`encodeIfPresent` can only be applied to optional values.", highlighting: property.binding,
+                                           replacing: property.declaration.attributes, message: "Remove the `codeOptions` macro`") { replacement in
+                        replacement = AttributeListSyntax(property.declaration.attributes.drop { attribute in
                             guard let attribute = attribute.as(AttributeSyntax.self),
                                   let attributeName = attribute.attributeName.as(IdentifierTypeSyntax.self) else { return false }
                             if let args = attribute.arguments?.as(LabeledExprListSyntax.self){
@@ -283,8 +280,8 @@ public enum codable: ExtensionMacro, MemberMacro {
                         })
                     }
                 } else {
-                    throw DiagnosticsError("`encodeIfPresent` can only be applied to optional values.", highlighting: variable,
-                                           replacing: decl.attributes, message: "Remove the `encodeIfPresent` option") { replacement in
+                    throw DiagnosticsError("`encodeIfPresent` can only be applied to optional values.", highlighting: property.binding,
+                                           replacing: property.declaration.attributes, message: "Remove the `encodeIfPresent` option") { replacement in
                         replacement = AttributeListSyntax(replacement.map { _attribute in
                             guard var attribute = _attribute.as(AttributeSyntax.self),
                                   let attributeName = attribute.attributeName.as(IdentifierTypeSyntax.self) else { return _attribute }
@@ -303,15 +300,15 @@ public enum codable: ExtensionMacro, MemberMacro {
                         })
                     }
                 }
-            } else if additionalInfo.encodeIfNoneDefault && variable.initializer == nil {
-                throw DiagnosticsError("A default value must be provided for `encodeIfNoneDefault` option.", highlighting: variable,
-                                       replacing: variable, message: "Provide a default value") { replacement in
+            } else if additionalInfo.encodeIfNoneDefault && property.initializer == nil {
+                throw DiagnosticsError("A default value must be provided for `encodeIfNoneDefault` option.", highlighting: property.binding,
+                                       replacing: property.binding, message: "Provide a default value") { replacement in
                     replacement.initializer = InitializerClauseSyntax(equal: .equalToken(leadingTrivia: .space, trailingTrivia: .space),
                                                                       value: EditorPlaceholderExprSyntax(placeholder: .identifier("<#default value#>")))
                 }
             }
             
-            return try handler(variable, decl, name, additionalInfo)
+            return try handler(property, additionalInfo)
         }
     }
     

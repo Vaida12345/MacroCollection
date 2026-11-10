@@ -9,6 +9,7 @@ import Foundation
 import SwiftSyntax
 import SwiftSyntaxMacros
 import SwiftUI
+import MacroEssentials
 
 
 public enum symbol: ExpressionMacro {
@@ -17,14 +18,11 @@ public enum symbol: ExpressionMacro {
                                  in context: some SwiftSyntaxMacros.MacroExpansionContext
     ) throws -> SwiftSyntax.ExprSyntax {
         guard let argument = node.arguments.first?.expression,
-              let segments = argument.as(StringLiteralExprSyntax.self)?.segments,
-              segments.count == 1,
-              case .stringSegment(let segment)? = segments.first
+              let name = argument.stringLiteralValue
         else {
             fatalError("Compiler Bug: The passed argument is not static string")
         }
         
-        let name = segment.content.text
         
 #if canImport(UIKit)
         guard UIImage(systemName: name) != nil else { throw MacroError.noSuchSymbol(name) }
