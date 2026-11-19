@@ -1294,8 +1294,31 @@ final class CodableTests: XCTestCase {
         )
     }
     
+    func testOptionsOnObservationStorageAreNotWarned() {
+        // `@ObservationTracked` copies the options onto an `@ObservationIgnored` peer, which the compiler expands without a lexical context.
+        assertMacroExpansion(
+            """
+            @transient
+            @ObservationIgnored
+            private var _age: Int = 0
+
+            @transient
+            var name: String = ""
+            """,
+            expandedSource: """
+            @ObservationIgnored
+            private var _age: Int = 0
+            var name: String = ""
+            """,
+            diagnostics: [
+                DiagnosticSpec(message: "@transient is ignored outside of a type annotated with @codable", line: 5, column: 1, severity: .warning)
+            ],
+            macroSpecs: testMacros
+        )
+    }
+
     // MARK: - Compiled Usage
-    
+
     // Unlike the expansion tests, these let the compiler expand the macros, and compile the result.
     
     @codable
